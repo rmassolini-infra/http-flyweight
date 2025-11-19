@@ -159,7 +159,7 @@ async function sincronizarCache(): Promise<void> {
       'Content-Type': 'application/json',
       'apikey': supabaseKey,
     },
-    body: JSON.stringify({ categories, organizations, forceSync: false }),
+    body: JSON.stringify({ categories, organizations, forceSync: true }),
   });
 
   if (!response.ok) {
