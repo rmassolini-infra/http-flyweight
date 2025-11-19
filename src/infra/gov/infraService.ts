@@ -55,29 +55,34 @@ export interface InfraDashboard {
 const DADOS_GOV_BASE = "https://dados.gov.br/api/3/action";
 
 /**
- * Busca datasets por categoria
+ * Busca datasets por categoria usando edge function
  */
 async function buscarPorCategoria(query: string, rows = 100): Promise<DadosGovDataset[]> {
   try {
-    const url = `${DADOS_GOV_BASE}/package_search?q=${encodeURIComponent(query)}&rows=${rows}`;
-    const response = await fetch(url);
-    
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const url = `${supabaseUrl}/functions/v1/dados-gov-search`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseKey,
+      },
+      body: JSON.stringify({ 
+        type: 'category',
+        query,
+        rows 
+      }),
+    });
+
     if (!response.ok) {
       console.warn(`Erro ao buscar categoria "${query}": ${response.status}`);
       return [];
     }
-    
+
     const data = await response.json();
-    const results = data.result?.results || [];
-    
-    return results.map((ds: any) => ({
-      id: ds.id,
-      title: ds.title,
-      organization: ds.organization?.title || "N/A",
-      resources: ds.resources?.length || 0,
-      tags: ds.tags?.map((t: any) => t.name) || [],
-      metadata_modified: ds.metadata_modified || "",
-    }));
+    return data.success ? data.results : [];
   } catch (error) {
     console.error(`Erro ao buscar categoria "${query}":`, error);
     return [];
@@ -85,28 +90,34 @@ async function buscarPorCategoria(query: string, rows = 100): Promise<DadosGovDa
 }
 
 /**
- * Busca datasets das principais organizações
+ * Busca datasets das principais organizações usando edge function
  */
 async function buscarPorOrganizacao(org: string, rows = 50): Promise<DadosGovDataset[]> {
   try {
-    const url = `${DADOS_GOV_BASE}/package_search?fq=organization:${encodeURIComponent(org)}&rows=${rows}`;
-    const response = await fetch(url);
-    
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const url = `${supabaseUrl}/functions/v1/dados-gov-search`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseKey,
+      },
+      body: JSON.stringify({ 
+        type: 'organization',
+        org,
+        rows 
+      }),
+    });
+
     if (!response.ok) {
+      console.warn(`Erro ao buscar organização "${org}": ${response.status}`);
       return [];
     }
-    
+
     const data = await response.json();
-    const results = data.result?.results || [];
-    
-    return results.map((ds: any) => ({
-      id: ds.id,
-      title: ds.title,
-      organization: ds.organization?.title || org,
-      resources: ds.resources?.length || 0,
-      tags: ds.tags?.map((t: any) => t.name) || [],
-      metadata_modified: ds.metadata_modified || "",
-    }));
+    return data.success ? data.results : [];
   } catch (error) {
     console.error(`Erro ao buscar organização "${org}":`, error);
     return [];
