@@ -49,32 +49,18 @@ export interface InfraDashboard {
     totalDatasets: number;
     categorias: number;
     dataColeta: string;
-    organizacoes?: string[];
-    cobertura?: string;
   };
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const DADOS_GOV_BASE = "https://dados.gov.br/api/3/action";
 
 /**
- * Busca datasets por categoria usando edge function proxy
+ * Busca datasets por categoria
  */
 async function buscarPorCategoria(query: string, rows = 100): Promise<DadosGovDataset[]> {
   try {
-    const url = `${SUPABASE_URL}/functions/v1/dados-gov-proxy`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-      },
-      body: JSON.stringify({
-        type: 'category',
-        query,
-        rows,
-      }),
-    });
+    const url = `${DADOS_GOV_BASE}/package_search?q=${encodeURIComponent(query)}&rows=${rows}`;
+    const response = await fetch(url);
     
     if (!response.ok) {
       console.warn(`Erro ao buscar categoria "${query}": ${response.status}`);
@@ -99,23 +85,12 @@ async function buscarPorCategoria(query: string, rows = 100): Promise<DadosGovDa
 }
 
 /**
- * Busca datasets das principais organizações usando edge function proxy
+ * Busca datasets das principais organizações
  */
 async function buscarPorOrganizacao(org: string, rows = 50): Promise<DadosGovDataset[]> {
   try {
-    const url = `${SUPABASE_URL}/functions/v1/dados-gov-proxy`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-      },
-      body: JSON.stringify({
-        type: 'organization',
-        query: org,
-        rows,
-      }),
-    });
+    const url = `${DADOS_GOV_BASE}/package_search?fq=organization:${encodeURIComponent(org)}&rows=${rows}`;
+    const response = await fetch(url);
     
     if (!response.ok) {
       return [];
@@ -143,9 +118,9 @@ async function buscarPorOrganizacao(org: string, rows = 50): Promise<DadosGovDat
  * Máxima cobertura de dados
  */
 export async function buscarDashboardInfra(): Promise<InfraDashboard> {
-  console.log("Iniciando agregação COMPLETA de dados.gov.br...");
+  console.log("Iniciando agregação de dados.gov.br...");
 
-  // Buscar datasets por categorias temáticas principais (MÁXIMA COBERTURA)
+  // Buscar datasets por categorias temáticas principais
   const [
     economia,
     saude,
@@ -156,17 +131,17 @@ export async function buscarDashboardInfra(): Promise<InfraDashboard> {
     trabalho,
     turismo,
   ] = await Promise.all([
-    buscarPorCategoria("economia OR PIB OR inflação OR emprego OR renda OR IPCA OR mercado OR exportação OR importação", 500),
-    buscarPorCategoria("saúde OR hospital OR SUS OR vacina OR COVID OR epidemia OR medicamento OR saúde pública", 500),
-    buscarPorCategoria("educação OR escola OR universidade OR ENEM OR MEC OR ensino OR professor OR aluno OR IDEB", 500),
-    buscarPorCategoria("segurança OR crime OR polícia OR violência OR homicídio OR roubo OR furto", 300),
-    buscarPorCategoria("meio ambiente OR desmatamento OR clima OR IBAMA OR poluição OR biodiversidade OR água OR floresta", 300),
-    buscarPorCategoria("transporte OR rodovia OR DNIT OR ANTT OR aeroporto OR porto OR ferrovia OR mobilidade OR trânsito", 300),
-    buscarPorCategoria("trabalho OR emprego OR CAGED OR carteira assinada OR desemprego OR salário OR sindicato", 300),
-    buscarPorCategoria("turismo OR hotel OR visitantes OR patrimônio OR cultura OR lazer", 200),
+    buscarPorCategoria("economia OR PIB OR inflação OR emprego OR renda", 150),
+    buscarPorCategoria("saúde OR hospital OR SUS OR vacina OR COVID", 150),
+    buscarPorCategoria("educação OR escola OR universidade OR ENEM OR MEC", 150),
+    buscarPorCategoria("segurança OR crime OR polícia OR violência", 100),
+    buscarPorCategoria("meio ambiente OR desmatamento OR clima OR IBAMA", 100),
+    buscarPorCategoria("transporte OR rodovia OR DNIT OR ANTT OR aeroporto", 100),
+    buscarPorCategoria("trabalho OR emprego OR CAGED OR carteira assinada", 100),
+    buscarPorCategoria("turismo OR hotel OR visitantes OR patrimônio", 80),
   ]);
 
-  // Buscar também por organizações chave (para complementar) - MÁXIMA COBERTURA
+  // Buscar também por organizações chave (para complementar)
   const [
     ibge,
     dnit,
@@ -175,28 +150,14 @@ export async function buscarDashboardInfra(): Promise<InfraDashboard> {
     mme,
     antt,
     mapa,
-    aneel,
-    anac,
-    anp,
-    funai,
-    incra,
-    inpe,
-    icmbio,
   ] = await Promise.all([
-    buscarPorOrganizacao("instituto-brasileiro-de-geografia-e-estatistica-ibge", 200),
-    buscarPorOrganizacao("departamento-nacional-de-infraestrutura-de-transportes-dnit", 150),
-    buscarPorOrganizacao("ministerio-da-educacao", 150),
-    buscarPorOrganizacao("ministerio-da-saude", 200),
-    buscarPorOrganizacao("ministerio-de-minas-e-energia", 150),
-    buscarPorOrganizacao("agencia-nacional-de-transportes-terrestres-antt", 150),
-    buscarPorOrganizacao("ministerio-da-agricultura-pecuaria-e-abastecimento", 150),
-    buscarPorOrganizacao("agencia-nacional-de-energia-eletrica-aneel", 150),
-    buscarPorOrganizacao("agencia-nacional-de-aviacao-civil-anac", 100),
-    buscarPorOrganizacao("agencia-nacional-do-petroleo-gas-natural-e-biocombustiveis-anp", 100),
-    buscarPorOrganizacao("fundacao-nacional-do-indio-funai", 100),
-    buscarPorOrganizacao("instituto-nacional-de-colonizacao-e-reforma-agraria-incra", 100),
-    buscarPorOrganizacao("instituto-nacional-de-pesquisas-espaciais-inpe", 100),
-    buscarPorOrganizacao("instituto-chico-mendes-de-conservacao-da-biodiversidade-icmbio", 100),
+    buscarPorOrganizacao("instituto-brasileiro-de-geografia-e-estatistica-ibge", 50),
+    buscarPorOrganizacao("departamento-nacional-de-infraestrutura-de-transportes-dnit", 50),
+    buscarPorOrganizacao("ministerio-da-educacao", 50),
+    buscarPorOrganizacao("ministerio-da-saude", 50),
+    buscarPorOrganizacao("ministerio-de-minas-e-energia", 50),
+    buscarPorOrganizacao("agencia-nacional-de-transportes-terrestres-antt", 50),
+    buscarPorOrganizacao("ministerio-da-agricultura-pecuaria-e-abastecimento", 50),
   ]);
 
   // Consolidar datasets únicos (remover duplicatas por ID)
@@ -208,27 +169,22 @@ export async function buscarDashboardInfra(): Promise<InfraDashboard> {
     return Array.from(map.values());
   };
 
-  const economiaCons = consolidarDatasets(economia, ibge, anp);
+  const economiaCons = consolidarDatasets(economia, ibge);
   const saudeCons = consolidarDatasets(saude, saude_org);
   const educacaoCons = consolidarDatasets(educacao, mec);
-  const transportesCons = consolidarDatasets(transportes, dnit, antt, anac);
-  const meioAmbienteCons = consolidarDatasets(meioAmbiente, icmbio, inpe);
-  const energiaCons = consolidarDatasets(aneel, mme);
+  const transportesCons = consolidarDatasets(transportes, dnit, antt);
 
   const totalDatasets = 
     economiaCons.length + 
     saudeCons.length + 
     educacaoCons.length + 
     seguranca.length + 
-    meioAmbienteCons.length + 
+    meioAmbiente.length + 
     transportesCons.length + 
     trabalho.length + 
-    turismo.length +
-    energiaCons.length +
-    funai.length +
-    incra.length;
+    turismo.length;
 
-  console.log(`Agregação COMPLETA concluída: ${totalDatasets} datasets únicos coletados de ${14} organizações governamentais`);
+  console.log(`Agregação concluída: ${totalDatasets} datasets únicos coletados`);
 
   return {
     economia: {
@@ -248,8 +204,8 @@ export async function buscarDashboardInfra(): Promise<InfraDashboard> {
       datasets: seguranca,
     },
     meioAmbiente: {
-      total: meioAmbienteCons.length,
-      datasets: meioAmbienteCons,
+      total: meioAmbiente.length,
+      datasets: meioAmbiente,
     },
     transportes: {
       total: transportesCons.length,
@@ -267,8 +223,6 @@ export async function buscarDashboardInfra(): Promise<InfraDashboard> {
       totalDatasets,
       categorias: 8,
       dataColeta: new Date().toISOString(),
-      organizacoes: ["IBGE", "DNIT", "MEC", "MS", "MME", "ANTT", "MAPA", "ANEEL", "ANAC", "ANP", "FUNAI", "INCRA", "INPE", "ICMBio"],
-      cobertura: "Máxima - 14 organizações governamentais",
     },
   };
 }
