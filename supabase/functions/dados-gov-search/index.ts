@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 // Nova API REST oficial do Portal Brasileiro de Dados Abertos
-const DADOS_GOV_API_BASE = "https://dados.gov.br/dados/api/publico";
+const DADOS_GOV_API_BASE = "https://dados.gov.br";
 const DADOS_GOV_TOKEN = Deno.env.get('DADOS_GOV_API_TOKEN');
 
 async function fetchFromAPI(url: string): Promise<Response> {
@@ -16,18 +16,28 @@ async function fetchFromAPI(url: string): Promise<Response> {
   const headers: HeadersInit = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (compatible; DataAggregator/1.0)',
   };
   
   if (DADOS_GOV_TOKEN) {
     headers['Authorization'] = `Bearer ${DADOS_GOV_TOKEN}`;
   }
   
-  const response = await fetch(url, { headers });
+  const response = await fetch(url, { 
+    headers,
+    redirect: 'follow',
+  });
   
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`Erro na API: ${response.status} - ${errorText}`);
     throw new Error(`API error: ${response.status}`);
+  }
+  
+  const contentType = response.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    console.error(`Content-Type inválido: ${contentType}`);
+    throw new Error(`Invalid content-type: ${contentType}`);
   }
   
   return response;
@@ -88,13 +98,14 @@ serve(async (req) => {
     let url: string;
     const params = new URLSearchParams();
     params.set('size', rows.toString());
+    params.set('page', '0');
     
     if (type === 'category') {
       params.set('palavraChave', query);
-      url = `${DADOS_GOV_API_BASE}/conjuntos-dados?${params.toString()}`;
+      url = `${DADOS_GOV_API_BASE}/dados/api/publico/conjuntos-dados?${params.toString()}`;
     } else if (type === 'organization') {
       params.set('organizacao', org);
-      url = `${DADOS_GOV_API_BASE}/conjuntos-dados?${params.toString()}`;
+      url = `${DADOS_GOV_API_BASE}/dados/api/publico/conjuntos-dados?${params.toString()}`;
     } else {
       throw new Error('Invalid search type');
     }
