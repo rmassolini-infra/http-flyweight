@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { buscarDashboardAgregado, DashboardAgregado } from "@/services/dashboardService";
+import { buscarInsightsInteligencia } from "@/services/intelligenceService";
+import { Insight } from "@/infra/intelligence/insightsService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, Brain, TrendingUp, Network, Shield, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowLeft, Brain, TrendingUp, Network, Shield, AlertCircle, CheckCircle2, Lightbulb, AlertTriangle, Target } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -26,6 +28,7 @@ interface AnaliseSetor {
 
 const InteligenciaInfra = () => {
   const [data, setData] = useState<DashboardAgregado | null>(null);
+  const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [analises, setAnalises] = useState<AnaliseCorrelacao[]>([]);
   const [analiseSetorial, setAnaliseSetorial] = useState<AnaliseSetor[]>([]);
@@ -42,9 +45,13 @@ const InteligenciaInfra = () => {
         // Processar análises
         processarAnalises(result);
         
+        // Buscar insights de inteligência
+        const insightsData = await buscarInsightsInteligencia();
+        setInsights(insightsData);
+        
         toast({
           title: "Análise concluída",
-          description: "Dados integrados e processados com sucesso",
+          description: `${insightsData.length} insights gerados com sucesso`,
         });
       } catch (error: any) {
         toast({
@@ -241,12 +248,79 @@ const InteligenciaInfra = () => {
         </div>
 
         {/* Main Analysis Tabs */}
-        <Tabs defaultValue="correlacoes" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="insights-ia" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="insights-ia">Insights IA</TabsTrigger>
             <TabsTrigger value="correlacoes">Correlações</TabsTrigger>
             <TabsTrigger value="setorial">Análise Setorial</TabsTrigger>
             <TabsTrigger value="insights">Insights Estratégicos</TabsTrigger>
           </TabsList>
+
+          {/* Insights IA Tab */}
+          <TabsContent value="insights-ia" className="space-y-4">
+            <Alert>
+              <Lightbulb className="h-4 w-4" />
+              <AlertTitle>Análise Automatizada de Inteligência</AlertTitle>
+              <AlertDescription>
+                {insights.length} insights gerados automaticamente baseados em análise avançada de dados integrados
+              </AlertDescription>
+            </Alert>
+
+            <div className="grid gap-4">
+              {insights.map((insight, idx) => {
+                const Icon =
+                  insight.tipo === "alerta"
+                    ? AlertTriangle
+                    : insight.tipo === "risco"
+                    ? AlertCircle
+                    : insight.tipo === "oportunidade"
+                    ? Target
+                    : Network;
+
+                const variantMap = {
+                  alerta: "destructive",
+                  risco: "secondary",
+                  oportunidade: "default",
+                  correlacao: "outline",
+                } as const;
+
+                return (
+                  <Card key={idx} className="hover:shadow-md transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1">
+                          <Icon className="h-6 w-6 mt-1 flex-shrink-0 text-primary" />
+                          <div className="space-y-1 flex-1">
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-xl">{insight.titulo}</CardTitle>
+                              <Badge variant={variantMap[insight.tipo]}>
+                                {insight.tipo.toUpperCase()}
+                              </Badge>
+                            </div>
+                            <CardDescription>{insight.descricao}</CardDescription>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    {insight.dadosRelacionados && (
+                      <CardContent>
+                        <details className="group">
+                          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+                            Ver dados relacionados →
+                          </summary>
+                          <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                            <pre className="text-xs overflow-auto max-h-48">
+                              {JSON.stringify(insight.dadosRelacionados, null, 2)}
+                            </pre>
+                          </div>
+                        </details>
+                      </CardContent>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
 
           {/* Correlações Tab */}
           <TabsContent value="correlacoes" className="space-y-4">
