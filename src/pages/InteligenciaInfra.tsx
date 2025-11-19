@@ -178,36 +178,41 @@ const InteligenciaInfra = () => {
   const potenciaMedia = data.municipios.reduce((sum, m) => sum + m.potenciaGDkW, 0) / totalMunicipios;
 
   return (
-    <div className="min-h-screen bg-background dark palantir-grid">
+    <div className="min-h-screen bg-background dark palantir-grid relative">
       {/* Tech overlay effect */}
       <div className="fixed inset-0 palantir-hex opacity-30 pointer-events-none" />
       
-      <div className="container mx-auto p-6 space-y-6 relative">
-        {/* Header */}
-        <div className="flex items-start justify-between palantir-border rounded-lg p-6 bg-card/50 backdrop-blur-sm">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Brain className="h-10 w-10 text-primary palantir-glow" />
-                <div className="absolute inset-0 animate-pulse">
-                  <Brain className="h-10 w-10 text-primary opacity-50" />
-                </div>
-              </div>
-              <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Inteligência Infra
-              </h1>
-            </div>
-            <p className="text-muted-foreground max-w-2xl font-mono text-sm">
-              &gt; Plataforma de análise avançada integrando dados de múltiplas fontes públicas brasileiras.
-              <br />
-              &gt; Análise preditiva, correlações e insights para tomada de decisão estratégica.
-            </p>
+      {/* Header */}
+      <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm relative z-10">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate("/")}
+              className="palantir-border hover:bg-primary/10 font-mono"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              VOLTAR
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/dashboard")}
+              className="gap-2 palantir-border font-mono"
+            >
+              <Network className="h-4 w-4" />
+              DASHBOARD AGREGADO
+            </Button>
           </div>
-          <Button variant="outline" onClick={() => navigate("/")} className="palantir-border">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar
-          </Button>
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-primary bg-clip-text text-transparent font-mono tracking-wider">
+            INFRA BR DATA
+          </h1>
+          <p className="text-muted-foreground font-mono">
+            MOTOR DE INTELIGÊNCIA TERRITORIAL E ANÁLISE DE INFRAESTRUTURA
+          </p>
         </div>
+      </div>
+
+      <div className="container mx-auto p-6 space-y-6 relative z-10">
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
