@@ -178,21 +178,32 @@ const InteligenciaInfra = () => {
   const potenciaMedia = data.municipios.reduce((sum, m) => sum + m.potenciaGDkW, 0) / totalMunicipios;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-background dark palantir-grid">
+      {/* Tech overlay effect */}
+      <div className="fixed inset-0 palantir-hex opacity-30 pointer-events-none" />
+      
+      <div className="container mx-auto p-6 space-y-6 relative">
         {/* Header */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between palantir-border rounded-lg p-6 bg-card/50 backdrop-blur-sm">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <Brain className="h-10 w-10 text-primary" />
-              <h1 className="text-4xl font-bold">Inteligência Infra</h1>
+              <div className="relative">
+                <Brain className="h-10 w-10 text-primary palantir-glow" />
+                <div className="absolute inset-0 animate-pulse">
+                  <Brain className="h-10 w-10 text-primary opacity-50" />
+                </div>
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                Inteligência Infra
+              </h1>
             </div>
-            <p className="text-muted-foreground max-w-2xl">
-              Plataforma de análise avançada integrando dados de múltiplas fontes públicas brasileiras.
-              Análise preditiva, correlações e insights para tomada de decisão estratégica.
+            <p className="text-muted-foreground max-w-2xl font-mono text-sm">
+              &gt; Plataforma de análise avançada integrando dados de múltiplas fontes públicas brasileiras.
+              <br />
+              &gt; Análise preditiva, correlações e insights para tomada de decisão estratégica.
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate("/")}>
+          <Button variant="outline" onClick={() => navigate("/")} className="palantir-border">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar
           </Button>
@@ -200,69 +211,73 @@ const InteligenciaInfra = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Fontes Integradas</CardTitle>
-              <Network className="h-4 w-4 text-muted-foreground" />
+          <Card className="palantir-border bg-card/50 backdrop-blur-sm relative overflow-hidden palantir-corner">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium font-mono">FONTES_INTEGRADAS</CardTitle>
+              <Network className="h-4 w-4 text-primary" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-primary">
                 {Object.values(data.meta.fontes).filter(Boolean).length}
               </div>
-              <p className="text-xs text-muted-foreground">APIs públicas conectadas</p>
+              <p className="text-xs text-muted-foreground font-mono mt-1">APIs públicas conectadas</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cobertura Nacional</CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
+          <Card className="palantir-border bg-card/50 backdrop-blur-sm relative overflow-hidden palantir-corner">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium font-mono">COBERTURA_NACIONAL</CardTitle>
+              <Shield className="h-4 w-4 text-accent" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalMunicipios}</div>
-              <p className="text-xs text-muted-foreground">Municípios analisados</p>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-accent">{totalMunicipios}</div>
+              <p className="text-xs text-muted-foreground font-mono mt-1">Municípios analisados</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Adoção GD</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <Card className="palantir-border bg-card/50 backdrop-blur-sm relative overflow-hidden palantir-corner">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium font-mono">ADOÇÃO_GD</CardTitle>
+              <TrendingUp className="h-4 w-4 text-primary" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{taxaAdocaoGD}%</div>
-              <p className="text-xs text-muted-foreground">Taxa de geração distribuída</p>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-primary">{taxaAdocaoGD}%</div>
+              <p className="text-xs text-muted-foreground font-mono mt-1">Taxa de geração distribuída</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Potência Média</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <Card className="palantir-border bg-card/50 backdrop-blur-sm relative overflow-hidden palantir-corner">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-3xl rounded-full" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-sm font-medium font-mono">POTÊNCIA_MÉDIA</CardTitle>
+              <TrendingUp className="h-4 w-4 text-accent" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{potenciaMedia.toFixed(0)} kW</div>
-              <p className="text-xs text-muted-foreground">Por município</p>
+            <CardContent className="relative z-10">
+              <div className="text-3xl font-bold text-accent">{potenciaMedia.toFixed(0)} kW</div>
+              <p className="text-xs text-muted-foreground font-mono mt-1">Por município</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Analysis Tabs */}
         <Tabs defaultValue="insights-ia" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="insights-ia">Insights IA</TabsTrigger>
-            <TabsTrigger value="correlacoes">Correlações</TabsTrigger>
-            <TabsTrigger value="setorial">Análise Setorial</TabsTrigger>
-            <TabsTrigger value="insights">Insights Estratégicos</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 palantir-border bg-card/50 backdrop-blur-sm">
+            <TabsTrigger value="insights-ia" className="data-[state=active]:palantir-glow font-mono">INSIGHTS_IA</TabsTrigger>
+            <TabsTrigger value="correlacoes" className="data-[state=active]:palantir-glow font-mono">CORRELAÇÕES</TabsTrigger>
+            <TabsTrigger value="setorial" className="data-[state=active]:palantir-glow font-mono">SETORIAL</TabsTrigger>
+            <TabsTrigger value="insights" className="data-[state=active]:palantir-glow font-mono">ESTRATÉGICOS</TabsTrigger>
           </TabsList>
 
           {/* Insights IA Tab */}
           <TabsContent value="insights-ia" className="space-y-4">
-            <Alert>
-              <Lightbulb className="h-4 w-4" />
-              <AlertTitle>Análise Automatizada de Inteligência</AlertTitle>
-              <AlertDescription>
-                {insights.length} insights gerados automaticamente baseados em análise avançada de dados integrados
+            <Alert className="palantir-border bg-card/50 backdrop-blur-sm">
+              <Lightbulb className="h-4 w-4 text-primary" />
+              <AlertTitle className="font-mono text-primary">ANÁLISE AUTOMATIZADA</AlertTitle>
+              <AlertDescription className="font-mono text-sm">
+                &gt; {insights.length} insights gerados | análise avançada de dados integrados
               </AlertDescription>
             </Alert>
 
@@ -285,31 +300,34 @@ const InteligenciaInfra = () => {
                 } as const;
 
                 return (
-                  <Card key={idx} className="hover:shadow-md transition-shadow">
-                    <CardHeader>
+                  <Card key={idx} className="palantir-border bg-card/50 backdrop-blur-sm hover:palantir-glow transition-all relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <CardHeader className="relative z-10">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 flex-1">
-                          <Icon className="h-6 w-6 mt-1 flex-shrink-0 text-primary" />
+                          <Icon className="h-6 w-6 mt-1 flex-shrink-0 text-primary group-hover:animate-pulse" />
                           <div className="space-y-1 flex-1">
-                            <div className="flex items-center gap-2">
-                              <CardTitle className="text-xl">{insight.titulo}</CardTitle>
-                              <Badge variant={variantMap[insight.tipo]}>
-                                {insight.tipo.toUpperCase()}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <CardTitle className="text-xl font-mono">{insight.titulo}</CardTitle>
+                              <Badge variant={variantMap[insight.tipo]} className="font-mono text-xs">
+                                [{insight.tipo.toUpperCase()}]
                               </Badge>
                             </div>
-                            <CardDescription>{insight.descricao}</CardDescription>
+                            <CardDescription className="font-mono text-sm leading-relaxed">
+                              &gt; {insight.descricao}
+                            </CardDescription>
                           </div>
                         </div>
                       </div>
                     </CardHeader>
                     {insight.dadosRelacionados && (
-                      <CardContent>
-                        <details className="group">
-                          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
-                            Ver dados relacionados →
+                      <CardContent className="relative z-10">
+                        <details className="group/details">
+                          <summary className="cursor-pointer text-sm font-medium font-mono text-primary hover:text-accent transition-colors flex items-center gap-2">
+                            <span className="text-muted-foreground">&gt;</span> VER_DADOS_RELACIONADOS
                           </summary>
-                          <div className="mt-3 p-3 bg-muted/50 rounded-md">
-                            <pre className="text-xs overflow-auto max-h-48">
+                          <div className="mt-3 p-3 bg-background/80 rounded-md border border-primary/20">
+                            <pre className="text-xs overflow-auto max-h-48 font-mono text-muted-foreground">
                               {JSON.stringify(insight.dadosRelacionados, null, 2)}
                             </pre>
                           </div>
