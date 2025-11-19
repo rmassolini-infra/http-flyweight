@@ -54,15 +54,27 @@ export interface InfraDashboard {
   };
 }
 
-const DADOS_GOV_BASE = "https://dados.gov.br/api/3/action";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 /**
- * Busca datasets por categoria
+ * Busca datasets por categoria usando edge function proxy
  */
 async function buscarPorCategoria(query: string, rows = 100): Promise<DadosGovDataset[]> {
   try {
-    const url = `${DADOS_GOV_BASE}/package_search?q=${encodeURIComponent(query)}&rows=${rows}`;
-    const response = await fetch(url);
+    const url = `${SUPABASE_URL}/functions/v1/dados-gov-proxy`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+      },
+      body: JSON.stringify({
+        type: 'category',
+        query,
+        rows,
+      }),
+    });
     
     if (!response.ok) {
       console.warn(`Erro ao buscar categoria "${query}": ${response.status}`);
@@ -87,12 +99,23 @@ async function buscarPorCategoria(query: string, rows = 100): Promise<DadosGovDa
 }
 
 /**
- * Busca datasets das principais organizações
+ * Busca datasets das principais organizações usando edge function proxy
  */
 async function buscarPorOrganizacao(org: string, rows = 50): Promise<DadosGovDataset[]> {
   try {
-    const url = `${DADOS_GOV_BASE}/package_search?fq=organization:${encodeURIComponent(org)}&rows=${rows}`;
-    const response = await fetch(url);
+    const url = `${SUPABASE_URL}/functions/v1/dados-gov-proxy`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+      },
+      body: JSON.stringify({
+        type: 'organization',
+        query: org,
+        rows,
+      }),
+    });
     
     if (!response.ok) {
       return [];

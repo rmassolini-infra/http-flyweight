@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.infra-intelligence]
 verify_jwt = false
+
+[functions.dados-gov-proxy]
+verify_jwt = false
