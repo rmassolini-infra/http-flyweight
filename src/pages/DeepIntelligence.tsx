@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,14 +6,66 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { buscarAnaliseInteligentteProfunda, DeepIntelligenceAnalysis } from "@/services/deepIntelligenceService";
-import { Brain, TrendingUp, AlertTriangle, Lightbulb, Target, Database, Building2, Tag, Sparkles } from "lucide-react";
+import { Brain, TrendingUp, AlertTriangle, Lightbulb, Target, Database, Building2, Tag, Sparkles, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function DeepIntelligence() {
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [analysis, setAnalysis] = useState<DeepIntelligenceAnalysis | null>(null);
+  const [datasetCount, setDatasetCount] = useState(0);
+
+  useEffect(() => {
+    checkDatasetCount();
+  }, []);
+
+  const checkDatasetCount = async () => {
+    const { count } = await supabase
+      .from('dadosgov_datasets')
+      .select('*', { count: 'exact', head: true });
+    setDatasetCount(count || 0);
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-dados-gov', {
+        body: {
+          forceSync: true,
+          categories: [
+            { query: "economia OR PIB OR inflação OR emprego OR renda", rows: 150 },
+            { query: "saúde OR hospital OR SUS OR vacina OR COVID", rows: 150 },
+            { query: "educação OR escola OR universidade OR ENEM OR MEC", rows: 150 },
+            { query: "segurança OR crime OR polícia OR violência", rows: 100 },
+            { query: "meio ambiente OR desmatamento OR clima OR IBAMA", rows: 100 },
+          ],
+          organizations: [
+            { org: "instituto-brasileiro-de-geografia-e-estatistica-ibge", rows: 100 },
+            { org: "ministerio-da-saude", rows: 100 },
+            { org: "ministerio-da-educacao", rows: 100 },
+          ]
+        }
+      });
+
+      if (error) throw error;
+      
+      await checkDatasetCount();
+      toast.success("Sincronização concluída! Dados atualizados.");
+    } catch (error) {
+      console.error('Erro na sincronização:', error);
+      toast.error("Erro ao sincronizar dados. Verifique a conexão.");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleAnalyze = async () => {
+    if (datasetCount === 0) {
+      toast.error("Nenhum dado disponível. Execute a sincronização primeiro.");
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await buscarAnaliseInteligentteProfunda();
@@ -56,26 +108,60 @@ export default function DeepIntelligence() {
           <p className="text-muted-foreground mt-2">
             Análise completa e automatizada de todos os dados disponíveis no Portal Brasileiro de Dados Abertos usando IA
           </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Datasets no banco: <Badge variant="outline">{datasetCount}</Badge>
+          </p>
         </div>
-        <Button 
-          onClick={handleAnalyze} 
-          disabled={loading}
-          size="lg"
-          className="gap-2"
-        >
-          {loading ? (
-            <>
-              <Sparkles className="h-5 w-5 animate-spin" />
-              Analisando...
-            </>
-          ) : (
-            <>
-              <Brain className="h-5 w-5" />
-              Iniciar Análise Profunda
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleSync} 
+            disabled={syncing}
+            size="lg"
+            variant="outline"
+            className="gap-2"
+          >
+            {syncing ? (
+              <>
+                <RefreshCw className="h-5 w-5 animate-spin" />
+                Sincronizando...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-5 w-5" />
+                Sincronizar Dados
+              </>
+            )}
+          </Button>
+          <Button 
+            onClick={handleAnalyze} 
+            disabled={loading || datasetCount === 0}
+            size="lg"
+            className="gap-2"
+          >
+            {loading ? (
+              <>
+                <Sparkles className="h-5 w-5 animate-spin" />
+                Analisando...
+              </>
+            ) : (
+              <>
+                <Brain className="h-5 w-5" />
+                Iniciar Análise Profunda
+              </>
+            )}
+          </Button>
+        </div>
       </div>
+
+      {datasetCount === 0 && !syncing && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Nenhum dado disponível</AlertTitle>
+          <AlertDescription>
+            Clique em "Sincronizar Dados" para importar dados do Portal Brasileiro de Dados Abertos antes de executar a análise.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {loading && (
         <div className="space-y-4">
