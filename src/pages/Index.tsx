@@ -14,7 +14,7 @@ import { listarDespesasOrgao, DespesaOrcamentaria } from "@/infra/finance/portal
 import { buscarDatasets, DadosGovDataset } from "@/infra/infra/dadosGovService";
 import { listarEstacoesAutomaticas, obterEstacoesExemplo, InmetEstacao } from "@/infra/climate/inmetService";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Code2, MapPin, Zap, DollarSign, Database, CloudRain, BarChart3 } from "lucide-react";
+import { Activity, Code2, MapPin, Zap, DollarSign, Database, CloudRain, BarChart3, Brain } from "lucide-react";
 
 interface FetchState {
   isLoading: boolean;
@@ -386,14 +386,23 @@ const Index = () => {
             transparência pública (Portal da Transparência), infraestrutura
             (dados.gov.br/DNIT/ANTT), clima (INMET) e muito mais.
           </p>
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-4">
             <Button
               size="lg"
+              onClick={() => navigate("/inteligencia")}
+              className="gap-2"
+            >
+              <Brain className="h-5 w-5" />
+              Inteligência Infra
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
               onClick={() => navigate("/dashboard")}
               className="gap-2"
             >
               <BarChart3 className="h-5 w-5" />
-              Ver Dashboard Agregado
+              Dashboard Agregado
             </Button>
           </div>
         </div>
