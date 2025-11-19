@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.portal-transparencia]
 verify_jwt = false
+
+[functions.inteligencia-v2]
+verify_jwt = false
