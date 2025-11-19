@@ -102,32 +102,37 @@ const Dashboard = () => {
       {/* Hexagonal overlay */}
       <div className="fixed inset-0 palantir-hex opacity-30 pointer-events-none" />
       
-      <div className="container mx-auto p-6 space-y-6 relative z-10">
-        {/* Header */}
-        <div className="palantir-border bg-card/50 backdrop-blur-sm rounded-lg p-6 relative palantir-corner">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <Database className="h-10 w-10 text-primary palantir-glow animate-pulse" />
-                <h1 className="text-4xl font-bold font-mono tracking-tight">DASHBOARD AGREGADO</h1>
-              </div>
-              <p className="text-muted-foreground font-mono">
-                Visualização de dados consolidados de múltiplas fontes brasileiras
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => navigate("/")} className="palantir-border bg-card/50 backdrop-blur-sm hover:palantir-glow font-mono">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                VOLTAR
-              </Button>
-              <Button onClick={() => navigate("/inteligencia")} className="palantir-glow font-mono">
-                <Brain className="mr-2 h-4 w-4" />
-                INTELIGÊNCIA
-              </Button>
-            </div>
+      {/* Header */}
+      <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm relative z-10">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate("/")}
+              className="palantir-border hover:bg-primary/10 font-mono"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              VOLTAR
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/inteligencia")}
+              className="gap-2 palantir-border palantir-glow font-mono"
+            >
+              <Brain className="h-4 w-4" />
+              INTELIGÊNCIA INFRA
+            </Button>
           </div>
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-primary bg-clip-text text-transparent font-mono tracking-wider">
+            INFRA BR DATA
+          </h1>
+          <p className="text-muted-foreground font-mono">
+            PAINEL AGREGADO DE DADOS PÚBLICOS BRASILEIROS
+          </p>
         </div>
+      </div>
 
+      <div className="container mx-auto px-4 py-8 relative z-10">
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="palantir-border bg-card/50 backdrop-blur-sm palantir-corner hover:palantir-glow transition-all">

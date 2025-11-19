@@ -377,8 +377,8 @@ const Index = () => {
             <Database className="h-10 w-10 text-accent" />
             <Code2 className="h-10 w-10 text-primary" />
           </div>
-          <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-primary bg-clip-text text-transparent">
-            HTTP Client Dashboard
+          <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-primary bg-clip-text text-transparent font-mono tracking-wider">
+            INFRA BR DATA
           </h1>
           <p className="text-center text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
             Plataforma abrangente de integração com APIs públicas brasileiras e
