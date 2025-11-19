@@ -8,7 +8,7 @@ import { DadosGovCard } from "@/components/DadosGovCard";
 import { InmetCard } from "@/components/InmetCard";
 import { AneelComprehensiveCard } from "@/components/AneelComprehensiveCard";
 import { MAPAComprehensiveCard } from "@/components/MAPAComprehensiveCard";
-import { PalantirCard } from "@/components/PalantirCard";
+import { InfraIntelligenceCard } from "@/components/InfraIntelligenceCard";
 import { Button } from "@/components/ui/button";
 import { httpGetJson, HttpError } from "@/infra/core/httpClient";
 import { listarMunicipios, IbgeMunicipio } from "@/infra/geo/ibgeService";
@@ -391,9 +391,9 @@ const Index = () => {
           {/* MAPA - Agricultura e Pecuária */}
           <MAPAComprehensiveCard />
 
-          {/* Palantir Intelligence - Full Spectrum */}
+          {/* Infra Intelligence - Full Spectrum */}
           <div className="md:col-span-2">
-            <PalantirCard />
+            <InfraIntelligenceCard />
           </div>
 
         </div>

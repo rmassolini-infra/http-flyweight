@@ -18,5 +18,5 @@ verify_jwt = false
 [functions.cross-intelligence]
 verify_jwt = false
 
-[functions.palantir-intelligence]
+[functions.infra-intelligence]
 verify_jwt = false
