@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { buscarDashboardAgregado, DashboardAgregado } from "@/services/dashboardService";
 import { buscarInsightsInteligencia } from "@/services/intelligenceService";
+import { gerarAnaliseInteligenciaCruzada, type CrossIntelligenceResponse } from "@/services/crossIntelligenceService";
+import { buscarDashboardAneelCompleto } from "@/infra/energy/aneelComprehensiveService";
+import { buscarDashboardMAPACompleto } from "@/infra/agriculture/mapaService";
 import { Insight } from "@/infra/intelligence/insightsService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +32,8 @@ interface AnaliseSetor {
 const InteligenciaInfra = () => {
   const [data, setData] = useState<DashboardAgregado | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [crossIntelligence, setCrossIntelligence] = useState<CrossIntelligenceResponse | null>(null);
+  const [loadingIntelligence, setLoadingIntelligence] = useState(false);
   const [loading, setLoading] = useState(true);
   const [analises, setAnalises] = useState<AnaliseCorrelacao[]>([]);
   const [analiseSetorial, setAnaliseSetorial] = useState<AnaliseSetor[]>([]);
@@ -172,6 +177,50 @@ const InteligenciaInfra = () => {
     );
   }
 
+  const handleCrossIntelligence = async () => {
+    if (!data) return;
+    setLoadingIntelligence(true);
+    try {
+      const [aneelData, mapaData] = await Promise.all([
+        buscarDashboardAneelCompleto(),
+        buscarDashboardMAPACompleto(),
+      ]);
+
+      const municipiosComGDData = data.municipios.filter(m => m.potenciaGDkW > 0).length;
+
+      const result = await gerarAnaliseInteligenciaCruzada({
+        municipios: {
+          total: data.municipios.length,
+          comGD: municipiosComGDData,
+        },
+        energia: aneelData,
+        financas: {
+          total: data.financasPublicas.despesasOrgaoAmostra.length,
+          valorTotal: data.financasPublicas.despesasOrgaoAmostra.reduce((sum, d) => sum + d.valorPago, 0),
+        },
+        infraestrutura: {
+          dnit: data.infraestrutura.datasetsDnit,
+          antt: data.infraestrutura.datasetsAntt,
+        },
+        agricultura: mapaData,
+      });
+
+      setCrossIntelligence(result);
+      toast({
+        title: "Análise Cruzada Concluída",
+        description: "Correlações estratégicas identificadas",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro na Análise",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingIntelligence(false);
+    }
+  };
+
   const totalMunicipios = data.municipios.length;
   const municipiosComGD = data.municipios.filter(m => m.potenciaGDkW > 0).length;
   const taxaAdocaoGD = ((municipiosComGD / totalMunicipios) * 100).toFixed(1);
@@ -268,13 +317,77 @@ const InteligenciaInfra = () => {
         </div>
 
         {/* Main Analysis Tabs */}
-        <Tabs defaultValue="insights-ia" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 palantir-border bg-card/50 backdrop-blur-sm">
+        <Tabs defaultValue="cross-intel" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-5 palantir-border bg-card/50 backdrop-blur-sm">
+            <TabsTrigger value="cross-intel" className="data-[state=active]:palantir-glow font-mono">CROSS_INTEL</TabsTrigger>
             <TabsTrigger value="insights-ia" className="data-[state=active]:palantir-glow font-mono">INSIGHTS_IA</TabsTrigger>
             <TabsTrigger value="correlacoes" className="data-[state=active]:palantir-glow font-mono">CORRELAÇÕES</TabsTrigger>
             <TabsTrigger value="setorial" className="data-[state=active]:palantir-glow font-mono">SETORIAL</TabsTrigger>
             <TabsTrigger value="insights" className="data-[state=active]:palantir-glow font-mono">ESTRATÉGICOS</TabsTrigger>
           </TabsList>
+
+          {/* Cross Intelligence Tab */}
+          <TabsContent value="cross-intel" className="space-y-4">
+            <Card className="palantir-border bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="font-mono flex items-center gap-2">
+                      <Network className="w-5 h-5 text-primary" />
+                      ANÁLISE CRUZADA MULTIFONTE
+                    </CardTitle>
+                    <CardDescription className="font-mono">
+                      Correlações entre IBGE, ANEEL, Portal da Transparência, MAPA, dados.gov.br e INMET
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={handleCrossIntelligence}
+                    disabled={loadingIntelligence}
+                    className="palantir-button font-mono"
+                  >
+                    {loadingIntelligence ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Analisando...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="w-4 h-4 mr-2" />
+                        Gerar Análise
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardHeader>
+              {crossIntelligence && (
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(crossIntelligence.dataSources).map(([source, enabled]) => (
+                        enabled && (
+                          <Badge key={source} variant="outline" className="palantir-border font-mono">
+                            ✓ {source.toUpperCase()}
+                          </Badge>
+                        )
+                      ))}
+                    </div>
+                    <Alert className="palantir-border bg-primary/5">
+                      <Network className="h-4 w-4 text-primary" />
+                      <AlertTitle className="font-mono text-primary">CORRELAÇÕES IDENTIFICADAS</AlertTitle>
+                      <AlertDescription className="font-mono text-xs">
+                        Análise gerada: {new Date(crossIntelligence.timestamp).toLocaleString('pt-BR')}
+                      </AlertDescription>
+                    </Alert>
+                    <div className="p-4 bg-card/30 rounded palantir-border">
+                      <div className="prose prose-sm max-w-none font-mono text-sm whitespace-pre-wrap text-foreground">
+                        {crossIntelligence.analysis}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
+          </TabsContent>
 
           {/* Insights IA Tab */}
           <TabsContent value="insights-ia" className="space-y-4">

@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
 import { buscarDashboardAgregado, DashboardAgregado } from "@/services/dashboardService";
+import { gerarAnaliseInteligenciaCruzada, type CrossIntelligenceResponse } from "@/services/crossIntelligenceService";
+import { buscarDashboardAneelCompleto } from "@/infra/energy/aneelComprehensiveService";
+import { buscarDashboardMAPACompleto } from "@/infra/agriculture/mapaService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { Loader2, Database, Zap, DollarSign, Warehouse, ArrowLeft, Brain, MapPin } from "lucide-react";
+import { Loader2, Database, Zap, DollarSign, Warehouse, ArrowLeft, Brain, MapPin, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 const Dashboard = () => {
   const [data, setData] = useState<DashboardAgregado | null>(null);
+  const [crossIntelligence, setCrossIntelligence] = useState<CrossIntelligenceResponse | null>(null);
+  const [loadingIntelligence, setLoadingIntelligence] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -96,6 +102,47 @@ const Dashboard = () => {
   const totalMunicipios = data.municipios.length;
   const totalMunicipiosComGD = data.municipios.filter(m => m.potenciaGDkW > 0).length;
   const totalPotenciaGD = data.municipios.reduce((sum, m) => sum + m.potenciaGDkW, 0);
+
+  const handleCrossIntelligence = async () => {
+    setLoadingIntelligence(true);
+    try {
+      const [aneelData, mapaData] = await Promise.all([
+        buscarDashboardAneelCompleto(),
+        buscarDashboardMAPACompleto(),
+      ]);
+
+      const result = await gerarAnaliseInteligenciaCruzada({
+        municipios: {
+          total: data!.municipios.length,
+          comGD: totalMunicipiosComGD,
+        },
+        energia: aneelData,
+        financas: {
+          total: data!.financasPublicas.despesasOrgaoAmostra.length,
+          valorTotal: data!.financasPublicas.despesasOrgaoAmostra.reduce((sum, d) => sum + d.valorPago, 0),
+        },
+        infraestrutura: {
+          dnit: data!.infraestrutura.datasetsDnit,
+          antt: data!.infraestrutura.datasetsAntt,
+        },
+        agricultura: mapaData,
+      });
+
+      setCrossIntelligence(result);
+      toast({
+        title: "Análise Cruzada Concluída",
+        description: "Correlações identificadas com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro na Análise",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingIntelligence(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background dark palantir-grid relative">
