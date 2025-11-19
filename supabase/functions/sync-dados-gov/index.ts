@@ -6,33 +6,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// URL correta da API CKAN do Portal Brasileiro de Dados Abertos
-const DADOS_GOV_ENDPOINTS = [
-  "https://legado.dados.gov.br/api/3/action",
-  "https://dados.gov.br/api/3/action",
-];
+// Nova API REST oficial do Portal Brasileiro de Dados Abertos
+const DADOS_GOV_API_BASE = "https://dados.gov.br/dados/api/publico";
+const DADOS_GOV_TOKEN = Deno.env.get('DADOS_GOV_API_TOKEN');
 
-async function fetchWithFallback(path: string, options: RequestInit): Promise<Response | null> {
-  for (const baseUrl of DADOS_GOV_ENDPOINTS) {
-    try {
-      const url = `${baseUrl}${path}`;
-      console.log(`Sync - Tentando endpoint: ${url}`);
-      
-      const response = await fetch(url, options);
-      const contentType = response.headers.get('content-type');
-      
-      console.log(`Sync - Endpoint ${baseUrl} - Status: ${response.status}, Content-Type: ${contentType}`);
-      
-      if (response.ok && contentType && contentType.includes('application/json')) {
-        console.log(`Sync - ✓ Sucesso com endpoint: ${baseUrl}`);
-        return response;
-      }
-    } catch (error) {
-      console.error(`Sync - Erro ao tentar endpoint ${baseUrl}:`, error);
+async function fetchFromAPI(url: string): Promise<Response | null> {
+  try {
+    console.log(`Sync - Buscando dados de: ${url}`);
+    
+    const headers: HeadersInit = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    };
+    
+    if (DADOS_GOV_TOKEN) {
+      headers['Authorization'] = `Bearer ${DADOS_GOV_TOKEN}`;
     }
+    
+    const response = await fetch(url, { headers });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Sync - Erro na API: ${response.status} - ${errorText}`);
+      return null;
+    }
+    
+    console.log(`Sync - ✓ Sucesso: ${response.status}`);
+    return response;
+  } catch (error) {
+    console.error('Sync - Erro ao buscar dados:', error);
+    return null;
   }
-  
-  return null;
 }
 
 serve(async (req) => {
@@ -124,7 +128,7 @@ async function syncDatasets(
 
     // Buscar por categorias
     for (const cat of categories) {
-      const datasets = await fetchFromAPI('category', cat.query, cat.rows);
+      const datasets = await fetchDatasets('category', cat.query, cat.rows);
       if (datasets.length > 0) {
         await upsertDatasets(supabase, datasets);
         totalSynced += datasets.length;
@@ -133,7 +137,7 @@ async function syncDatasets(
 
     // Buscar por organizações
     for (const org of organizations) {
-      const datasets = await fetchFromAPI('organization', org.org, org.rows);
+      const datasets = await fetchDatasets('organization', org.org, org.rows);
       if (datasets.length > 0) {
         await upsertDatasets(supabase, datasets);
         totalSynced += datasets.length;
@@ -165,29 +169,46 @@ async function syncDatasets(
   }
 }
 
-async function fetchFromAPI(type: string, query: string, rows: number): Promise<any[]> {
+async function fetchDatasets(type: string, query: string, rows: number): Promise<any[]> {
   try {
-    let path: string;
+    const params = new URLSearchParams();
+    params.set('size', rows.toString());
+    
+    let url: string;
     if (type === 'category') {
-      path = `/package_search?q=${encodeURIComponent(query)}&rows=${rows}`;
+      params.set('palavraChave', query);
+      url = `${DADOS_GOV_API_BASE}/conjuntos-dados?${params.toString()}`;
     } else {
-      path = `/package_search?fq=organization:${encodeURIComponent(query)}&rows=${rows}`;
+      params.set('organizacao', query);
+      url = `${DADOS_GOV_API_BASE}/conjuntos-dados?${params.toString()}`;
     }
 
-    const response = await fetchWithFallback(path, {
-      headers: { 
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; DataAggregator/1.0)',
-      },
-    });
+    const response = await fetchFromAPI(url);
 
     if (!response) {
-      console.error(`Todos os endpoints falharam para ${type}: ${query}`);
+      console.error(`Falha ao buscar ${type}: ${query}`);
       return [];
     }
 
     const data = await response.json();
-    return data.result?.results || [];
+    const results = data.content || [];
+    
+    // Converter para o formato esperado pelo upsert
+    return results.map((ds: any) => ({
+      id: ds.id,
+      name: ds.nome || ds.name || ds.id,
+      title: ds.titulo || ds.title,
+      notes: ds.descricao || ds.notes,
+      organization: {
+        id: ds.organizacao?.id,
+        name: ds.organizacao?.sigla,
+        title: ds.organizacao?.nome,
+      },
+      resources: ds.recursos || ds.resources || [],
+      tags: ds.tags || [],
+      metadata_created: ds.dataCriacao || ds.metadata_created,
+      metadata_modified: ds.dataModificacao || ds.metadata_modified,
+    }));
   } catch (error) {
     console.error(`Erro ao buscar ${type}: ${query}`, error);
     return [];
