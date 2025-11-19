@@ -3,7 +3,7 @@ import { buscarDashboardAgregado, DashboardAgregado } from "@/services/dashboard
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { Loader2, Database, Zap, DollarSign, Warehouse, ArrowLeft, Brain } from "lucide-react";
+import { Loader2, Database, Zap, DollarSign, Warehouse, ArrowLeft, Brain, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -40,10 +40,11 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Carregando dashboard...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background dark palantir-grid relative">
+        <div className="fixed inset-0 palantir-hex opacity-30 pointer-events-none" />
+        <div className="text-center relative z-10">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary palantir-glow" />
+          <p className="text-muted-foreground font-mono">CARREGANDO DASHBOARD...</p>
         </div>
       </div>
     );
@@ -51,16 +52,17 @@ const Dashboard = () => {
 
   if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-background dark palantir-grid relative">
+        <div className="fixed inset-0 palantir-hex opacity-30 pointer-events-none" />
+        <Card className="max-w-md palantir-border bg-card/50 backdrop-blur-sm relative z-10">
           <CardHeader>
-            <CardTitle>Erro ao carregar dados</CardTitle>
-            <CardDescription>Não foi possível carregar os dados do dashboard</CardDescription>
+            <CardTitle className="font-mono">ERRO AO CARREGAR DADOS</CardTitle>
+            <CardDescription className="font-mono">Não foi possível carregar os dados do dashboard</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate("/")}>
+            <Button onClick={() => navigate("/")} className="palantir-glow font-mono">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
+              VOLTAR
             </Button>
           </CardContent>
         </Card>
@@ -96,77 +98,79 @@ const Dashboard = () => {
   const totalPotenciaGD = data.municipios.reduce((sum, m) => sum + m.potenciaGDkW, 0);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-background dark palantir-grid relative">
+      {/* Hexagonal overlay */}
+      <div className="fixed inset-0 palantir-hex opacity-30 pointer-events-none" />
+      
+      <div className="container mx-auto p-6 space-y-6 relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Dashboard Agregado</h1>
-            <p className="text-muted-foreground">
-              Visualização de dados consolidados de múltiplas fontes brasileiras
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/inteligencia")}>
-              <Brain className="mr-2 h-4 w-4" />
-              Inteligência Infra
-            </Button>
-            <Button variant="outline" onClick={() => navigate("/")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
+        <div className="palantir-border bg-card/50 backdrop-blur-sm rounded-lg p-6 relative palantir-corner">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Database className="h-10 w-10 text-primary palantir-glow animate-pulse" />
+                <h1 className="text-4xl font-bold font-mono tracking-tight">DASHBOARD AGREGADO</h1>
+              </div>
+              <p className="text-muted-foreground font-mono">
+                Visualização de dados consolidados de múltiplas fontes brasileiras
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/")} className="palantir-border bg-card/50 backdrop-blur-sm hover:palantir-glow font-mono">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                VOLTAR
+              </Button>
+              <Button onClick={() => navigate("/inteligencia")} className="palantir-glow font-mono">
+                <Brain className="mr-2 h-4 w-4" />
+                INTELIGÊNCIA
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+          <Card className="palantir-border bg-card/50 backdrop-blur-sm palantir-corner hover:palantir-glow transition-all">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Municípios</CardTitle>
-              <Database className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium font-mono">TOTAL MUNICÍPIOS</CardTitle>
+              <MapPin className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalMunicipios}</div>
-              <p className="text-xs text-muted-foreground">
-                {totalMunicipiosComGD} com geração distribuída
-              </p>
+              <div className="text-2xl font-bold font-mono">{totalMunicipios.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground font-mono">{totalMunicipiosComGD} com geração distribuída</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="palantir-border bg-card/50 backdrop-blur-sm palantir-corner hover:palantir-glow transition-all">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Potência Total GD</CardTitle>
-              <Zap className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium font-mono">POTÊNCIA TOTAL GD</CardTitle>
+              <Zap className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {(totalPotenciaGD / 1000).toFixed(2)} MW
-              </div>
-              <p className="text-xs text-muted-foreground">Geração distribuída</p>
+              <div className="text-2xl font-bold font-mono">{(totalPotenciaGD / 1000).toFixed(1)} MW</div>
+              <p className="text-xs text-muted-foreground font-mono">Geração distribuída</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="palantir-border bg-card/50 backdrop-blur-sm palantir-corner hover:palantir-glow transition-all">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Despesas Públicas</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium font-mono">DESPESAS PÚBLICAS</CardTitle>
+              <DollarSign className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{despesasData.length}</div>
-              <p className="text-xs text-muted-foreground">Órgãos analisados</p>
+              <div className="text-2xl font-bold font-mono">{despesasData.length}</div>
+              <p className="text-xs text-muted-foreground font-mono">Órgãos analisados</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="palantir-border bg-card/50 backdrop-blur-sm palantir-corner hover:palantir-glow transition-all">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Datasets Infraestrutura</CardTitle>
-              <Warehouse className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium font-mono">DATASETS INFRA</CardTitle>
+              <Warehouse className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {data.infraestrutura.datasetsDnit.length + data.infraestrutura.datasetsAntt.length}
-              </div>
-              <p className="text-xs text-muted-foreground">DNIT + ANTT</p>
+              <div className="text-2xl font-bold font-mono">{data.infraestrutura.datasetsDnit.length + data.infraestrutura.datasetsAntt.length}</div>
+              <p className="text-xs text-muted-foreground font-mono">DNIT + ANTT</p>
             </CardContent>
           </Card>
         </div>

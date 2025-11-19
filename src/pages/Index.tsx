@@ -460,7 +460,6 @@ const Index = () => {
             onFetch={fetchAneelData}
           />
 
-          {/* IBGE API - Featured Card */}
           <IbgeApiCard
             title="IBGE - Municípios Brasileiros"
             description="Dados oficiais de todos os municípios do Brasil via API JSON do IBGE"
@@ -484,7 +483,7 @@ const Index = () => {
             error={githubState.error}
             onFetch={fetchGithubData}
           />
-          
+
           <ApiCard
             title="Random Quote API"
             description="Get inspirational quotes from quotable.io"
@@ -497,97 +496,10 @@ const Index = () => {
             onFetch={fetchQuoteData}
           />
         </div>
-
-        {/* Features Section */}
-        <div className="mt-16 max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-8 text-foreground">
-            Recursos da Infraestrutura
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
-              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Activity className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-card-foreground">Timeout Handling</h3>
-              <p className="text-sm text-muted-foreground">
-                Cancelamento automático com thresholds configuráveis
-              </p>
-            </div>
-            
-            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
-              <div className="h-12 w-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                <Code2 className="h-6 w-6 text-accent" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-card-foreground">Type Safety</h3>
-              <p className="text-sm text-muted-foreground">
-                Suporte completo TypeScript com parâmetros genéricos
-              </p>
-            </div>
-            
-            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
-              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Activity className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-card-foreground">Error Management</h3>
-              <p className="text-sm text-muted-foreground">
-                Classe HttpError customizada com status e mensagens detalhadas
-              </p>
-            </div>
-
-            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
-              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <MapPin className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-card-foreground">Geolocalização</h3>
-              <p className="text-sm text-muted-foreground">
-                APIs geográficas com dados do IBGE e INMET
-              </p>
-            </div>
-
-            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
-              <div className="h-12 w-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                <Zap className="h-6 w-6 text-accent" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-card-foreground">CSV Parsing</h3>
-              <p className="text-sm text-muted-foreground">
-                Processamento de grandes arquivos CSV com dados da ANEEL
-              </p>
-            </div>
-
-            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
-              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <DollarSign className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-card-foreground">Secure API Keys</h3>
-              <p className="text-sm text-muted-foreground">
-                Edge functions com secrets management do Lovable Cloud
-              </p>
-            </div>
-
-            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
-              <div className="h-12 w-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                <Database className="h-6 w-6 text-accent" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-card-foreground">CKAN API</h3>
-              <p className="text-sm text-muted-foreground">
-                Busca de datasets públicos via dados.gov.br
-              </p>
-            </div>
-
-            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
-              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <CloudRain className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-card-foreground">Clima & Meteorologia</h3>
-              <p className="text-sm text-muted-foreground">
-                Dados meteorológicos do INMET com estações automáticas
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
 };
 
 export default Index;
+
