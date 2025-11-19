@@ -45,20 +45,38 @@ const handler = async (req: Request): Promise<Response> => {
     if (apiKey) {
       try {
         const despesasUrl = "https://api.portaldatransparencia.gov.br/api-de-dados/despesas?codigoOrgao=32000&ano=2024&pagina=1";
+        console.log("Buscando despesas do Portal da Transparência...");
+        
         const despesasResponse = await fetch(despesasUrl, {
           headers: {
             "chave-api-dados": apiKey,
           },
         });
         
+        console.log(`Portal Transparência status: ${despesasResponse.status}`);
+        
         if (despesasResponse.ok) {
-          const despesasData = await despesasResponse.json();
-          despesasOrgao = despesasData.slice(0, 20);
-          console.log(`Despesas carregadas: ${despesasOrgao.length}`);
+          const contentType = despesasResponse.headers.get("content-type");
+          console.log(`Content-Type: ${contentType}`);
+          
+          // Verificar se a resposta é JSON antes de fazer parse
+          if (contentType && contentType.includes("application/json")) {
+            const despesasData = await despesasResponse.json();
+            despesasOrgao = Array.isArray(despesasData) ? despesasData.slice(0, 20) : [];
+            console.log(`Despesas carregadas: ${despesasOrgao.length}`);
+          } else {
+            console.warn("Portal da Transparência retornou resposta não-JSON");
+            const text = await despesasResponse.text();
+            console.log("Resposta recebida:", text.substring(0, 200));
+          }
+        } else {
+          console.warn(`Portal da Transparência erro ${despesasResponse.status}`);
         }
       } catch (err) {
         console.error("Erro ao buscar despesas:", err);
       }
+    } else {
+      console.log("API Key do Portal da Transparência não configurada");
     }
 
     // 4) Buscar datasets de infraestrutura (dados.gov.br)
