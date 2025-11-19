@@ -6,7 +6,35 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const DADOS_GOV_BASE = "https://dados.gov.br/api/3/action";
+// Múltiplos endpoints para fallback
+const DADOS_GOV_ENDPOINTS = [
+  "https://dados.gov.br/api/3/action",
+  "https://dados.gov.br/api/action",
+  "http://dados.gov.br/api/3/action",
+];
+
+async function fetchWithFallback(path: string, options: RequestInit): Promise<Response | null> {
+  for (const baseUrl of DADOS_GOV_ENDPOINTS) {
+    try {
+      const url = `${baseUrl}${path}`;
+      console.log(`Sync - Tentando endpoint: ${url}`);
+      
+      const response = await fetch(url, options);
+      const contentType = response.headers.get('content-type');
+      
+      console.log(`Sync - Endpoint ${baseUrl} - Status: ${response.status}, Content-Type: ${contentType}`);
+      
+      if (response.ok && contentType && contentType.includes('application/json')) {
+        console.log(`Sync - ✓ Sucesso com endpoint: ${baseUrl}`);
+        return response;
+      }
+    } catch (error) {
+      console.error(`Sync - Erro ao tentar endpoint ${baseUrl}:`, error);
+    }
+  }
+  
+  return null;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -140,34 +168,22 @@ async function syncDatasets(
 
 async function fetchFromAPI(type: string, query: string, rows: number): Promise<any[]> {
   try {
-    let url: string;
+    let path: string;
     if (type === 'category') {
-      url = `${DADOS_GOV_BASE}/package_search?q=${encodeURIComponent(query)}&rows=${rows}`;
+      path = `/package_search?q=${encodeURIComponent(query)}&rows=${rows}`;
     } else {
-      url = `${DADOS_GOV_BASE}/package_search?fq=organization:${encodeURIComponent(query)}&rows=${rows}`;
+      path = `/package_search?fq=organization:${encodeURIComponent(query)}&rows=${rows}`;
     }
 
-    console.log(`Sync - Fetching ${type}: ${query} from ${url}`);
-    
-    const response = await fetch(url, {
+    const response = await fetchWithFallback(path, {
       headers: { 
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (compatible; DataAggregator/1.0)',
       },
     });
 
-    console.log(`Sync - Response status for ${query}: ${response.status}, content-type: ${response.headers.get('content-type')}`);
-
-    if (!response.ok) {
-      console.error(`API Error for ${type} ${query}: ${response.status}`);
-      return [];
-    }
-
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const responseText = await response.text();
-      console.error(`Invalid content type for ${type} ${query}: ${contentType}`);
-      console.error(`Response preview: ${responseText.substring(0, 200)}`);
+    if (!response) {
+      console.error(`Todos os endpoints falharam para ${type}: ${query}`);
       return [];
     }
 
