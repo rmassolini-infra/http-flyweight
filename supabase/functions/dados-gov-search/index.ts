@@ -6,11 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Múltiplos endpoints para fallback
+// URL correta da API CKAN do Portal Brasileiro de Dados Abertos
 const DADOS_GOV_ENDPOINTS = [
+  "https://legado.dados.gov.br/api/3/action",
   "https://dados.gov.br/api/3/action",
-  "https://dados.gov.br/api/action",
-  "http://dados.gov.br/api/3/action",
 ];
 
 async function fetchWithFallback(path: string, options: RequestInit): Promise<Response> {
