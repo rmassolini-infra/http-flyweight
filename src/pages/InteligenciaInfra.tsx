@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { buscarDashboardAgregado, DashboardAgregado } from "@/services/dashboardService";
 import { buscarInsightsInteligencia } from "@/services/intelligenceService";
 import { gerarAnaliseInteligenciaCruzada, type CrossIntelligenceResponse } from "@/services/crossIntelligenceService";
-import { buscarDashboardAneelCompleto } from "@/infra/energy/aneelComprehensiveService";
 import { buscarDashboardMAPACompleto } from "@/infra/agriculture/mapaService";
 import { Insight } from "@/infra/intelligence/insightsService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -181,10 +180,7 @@ const InteligenciaInfra = () => {
     if (!data) return;
     setLoadingIntelligence(true);
     try {
-      const [aneelData, mapaData] = await Promise.all([
-        buscarDashboardAneelCompleto(),
-        buscarDashboardMAPACompleto(),
-      ]);
+      const mapaData = await buscarDashboardMAPACompleto();
 
       const municipiosComGDData = data.municipios.filter(m => m.potenciaGDkW > 0).length;
 
@@ -193,7 +189,7 @@ const InteligenciaInfra = () => {
           total: data.municipios.length,
           comGD: municipiosComGDData,
         },
-        energia: aneelData,
+        energia: null,
         financas: {
           total: data.financasPublicas.despesasOrgaoAmostra.length,
           valorTotal: data.financasPublicas.despesasOrgaoAmostra.reduce((sum, d) => sum + d.valorPago, 0),
@@ -337,7 +333,7 @@ const InteligenciaInfra = () => {
                       ANÁLISE CRUZADA MULTIFONTE
                     </CardTitle>
                     <CardDescription className="font-mono">
-                      Correlações entre IBGE, ANEEL, Portal da Transparência, MAPA, dados.gov.br e INMET
+                      Correlações entre IBGE, Portal da Transparência, MAPA, dados.gov.br e INMET
                     </CardDescription>
                   </div>
                   <Button
@@ -635,8 +631,10 @@ const InteligenciaInfra = () => {
                 <p className="font-medium">{data.meta.fontes.ibge ? "✓ Ativo" : "✗ Inativo"}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">ANEEL</p>
-                <p className="font-medium">{data.meta.fontes.aneel ? "✓ Ativo" : "✗ Inativo"}</p>
+                <p className="text-muted-foreground">Portal Transparência</p>
+                <p className="font-medium">
+                  {data.meta.fontes.portalTransparencia ? "✓ Ativo" : "✗ Inativo"}
+                </p>
               </div>
               <div>
                 <p className="text-muted-foreground">Portal Transparência</p>
