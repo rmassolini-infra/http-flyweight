@@ -1,6 +1,6 @@
 /**
  * Serviço completo para consumir dados do Portal Brasileiro de Dados Abertos
- * Estilo Palantir: máxima agregação de dados + análise profunda
+ * Máxima agregação de dados + análise profunda
  */
 
 export interface DadosGovDataset {
@@ -12,7 +12,7 @@ export interface DadosGovDataset {
   metadata_modified: string;
 }
 
-export interface PalantirDashboard {
+export interface InfraDashboard {
   economia: {
     total: number;
     datasets: DadosGovDataset[];
@@ -115,10 +115,10 @@ async function buscarPorOrganizacao(org: string, rows = 50): Promise<DadosGovDat
 
 /**
  * Agrega TODOS os dados possíveis do dados.gov.br em categorias
- * Estilo Palantir: máxima cobertura de dados
+ * Máxima cobertura de dados
  */
-export async function buscarDashboardPalantir(): Promise<PalantirDashboard> {
-  console.log("Iniciando agregação estilo Palantir de dados.gov.br...");
+export async function buscarDashboardInfra(): Promise<InfraDashboard> {
+  console.log("Iniciando agregação de dados.gov.br...");
 
   // Buscar datasets por categorias temáticas principais
   const [
@@ -141,66 +141,75 @@ export async function buscarDashboardPalantir(): Promise<PalantirDashboard> {
     buscarPorCategoria("turismo OR hotel OR visitantes OR patrimônio", 80),
   ]);
 
-  // Também buscar por principais organizações governamentais
-  const [ibge, mapa, mme, ms, mec, dnit, antt] = await Promise.all([
+  // Buscar também por organizações chave (para complementar)
+  const [
+    ibge,
+    dnit,
+    mec,
+    saude_org,
+    mme,
+    antt,
+    mapa,
+  ] = await Promise.all([
     buscarPorOrganizacao("instituto-brasileiro-de-geografia-e-estatistica-ibge", 50),
-    buscarPorOrganizacao("ministerio-da-agricultura-pecuaria-e-abastecimento", 50),
-    buscarPorOrganizacao("ministerio-de-minas-e-energia", 50),
-    buscarPorOrganizacao("ministerio-da-saude", 50),
-    buscarPorOrganizacao("ministerio-da-educacao", 50),
     buscarPorOrganizacao("departamento-nacional-de-infraestrutura-de-transportes-dnit", 50),
+    buscarPorOrganizacao("ministerio-da-educacao", 50),
+    buscarPorOrganizacao("ministerio-da-saude", 50),
+    buscarPorOrganizacao("ministerio-de-minas-e-energia", 50),
     buscarPorOrganizacao("agencia-nacional-de-transportes-terrestres-antt", 50),
+    buscarPorOrganizacao("ministerio-da-agricultura-pecuaria-e-abastecimento", 50),
   ]);
 
-  // Combinar datasets únicos (evitar duplicatas)
-  const combinarUnicos = (arrays: DadosGovDataset[][]): DadosGovDataset[] => {
+  // Consolidar datasets únicos (remover duplicatas por ID)
+  const consolidarDatasets = (...arrays: DadosGovDataset[][]): DadosGovDataset[] => {
     const map = new Map<string, DadosGovDataset>();
-    arrays.flat().forEach(ds => map.set(ds.id, ds));
+    arrays.forEach(arr => {
+      arr.forEach(ds => map.set(ds.id, ds));
+    });
     return Array.from(map.values());
   };
 
-  const economiaFinal = combinarUnicos([economia, ibge]);
-  const saudeFinal = combinarUnicos([saude, ms]);
-  const educacaoFinal = combinarUnicos([educacao, mec]);
-  const transportesFinal = combinarUnicos([transportes, dnit, antt]);
-  const meioAmbienteFinal = combinarUnicos([meioAmbiente]);
+  const economiaCons = consolidarDatasets(economia, ibge);
+  const saudeCons = consolidarDatasets(saude, saude_org);
+  const educacaoCons = consolidarDatasets(educacao, mec);
+  const transportesCons = consolidarDatasets(transportes, dnit, antt);
 
   const totalDatasets = 
-    economiaFinal.length +
-    saudeFinal.length +
-    educacaoFinal.length +
-    seguranca.length +
-    meioAmbienteFinal.length +
-    transportesFinal.length +
-    trabalho.length +
+    economiaCons.length + 
+    saudeCons.length + 
+    educacaoCons.length + 
+    seguranca.length + 
+    meioAmbiente.length + 
+    transportesCons.length + 
+    trabalho.length + 
     turismo.length;
 
-  console.log(`Agregação Palantir concluída: ${totalDatasets} datasets únicos`);
+  console.log(`Agregação concluída: ${totalDatasets} datasets únicos coletados`);
 
   return {
     economia: {
-      total: economiaFinal.length,
-      datasets: economiaFinal,
+      total: economiaCons.length,
+      datasets: economiaCons,
     },
     saude: {
-      total: saudeFinal.length,
-      datasets: saudeFinal,
+      total: saudeCons.length,
+      datasets: saudeCons,
     },
     educacao: {
-      total: educacaoFinal.length,
-      datasets: educacaoFinal,
+      total: educacaoCons.length,
+      datasets: educacaoCons,
     },
     seguranca: {
       total: seguranca.length,
       datasets: seguranca,
     },
     meioAmbiente: {
-      total: meioAmbienteFinal.length,
-      datasets: meioAmbienteFinal,
+      total: meioAmbiente.length,
+      datasets: meioAmbiente,
     },
     transportes: {
-      total: transportesFinal.length,
-      datasets: transportesFinal,
+      total: transportesCons.length,
+      datasets: transportesCons,
     },
     trabalho: {
       total: trabalho.length,

@@ -1,8 +1,8 @@
 /**
- * Cliente para análise de inteligência estilo Palantir
+ * Cliente para análise de inteligência de infraestrutura
  */
 
-export interface PalantirIntelligenceResponse {
+export interface InfraIntelligenceResponse {
   intelligence: string;
   coverage: {
     totalDatasets: number;
@@ -19,10 +19,10 @@ export interface PalantirIntelligenceResponse {
   timestamp: string;
 }
 
-export async function gerarInteligenciaPalantir(palantirData: any): Promise<PalantirIntelligenceResponse> {
+export async function gerarInteligenciaInfra(infraData: any): Promise<InfraIntelligenceResponse> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  const url = `${supabaseUrl}/functions/v1/palantir-intelligence`;
+  const url = `${supabaseUrl}/functions/v1/infra-intelligence`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -30,7 +30,7 @@ export async function gerarInteligenciaPalantir(palantirData: any): Promise<Pala
       'Content-Type': 'application/json',
       'apikey': supabaseKey,
     },
-    body: JSON.stringify({ palantirData }),
+    body: JSON.stringify({ infraData }),
   });
 
   if (!response.ok) {
