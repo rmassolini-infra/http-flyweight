@@ -3,7 +3,7 @@ import { buscarDashboardAgregado, DashboardAgregado } from "@/services/dashboard
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { Loader2, Database, Zap, DollarSign, Warehouse, ArrowLeft } from "lucide-react";
+import { Loader2, Database, Zap, DollarSign, Warehouse, ArrowLeft, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -106,10 +106,16 @@ const Dashboard = () => {
               Visualização de dados consolidados de múltiplas fontes brasileiras
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate("/")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/inteligencia")}>
+              <Brain className="mr-2 h-4 w-4" />
+              Inteligência Infra
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/")}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+          </div>
         </div>
 
         {/* Stats Overview */}
