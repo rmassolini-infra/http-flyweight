@@ -3,12 +3,14 @@ import { ApiCard } from "@/components/ApiCard";
 import { IbgeApiCard } from "@/components/IbgeApiCard";
 import { AneelApiCard } from "@/components/AneelApiCard";
 import { PortalTransparenciaCard } from "@/components/PortalTransparenciaCard";
+import { DadosGovCard } from "@/components/DadosGovCard";
 import { httpGetJson, HttpError } from "@/infra/core/httpClient";
 import { listarMunicipios, IbgeMunicipio } from "@/infra/geo/ibgeService";
 import { listarEmpreendimentosGD, AneelGdEmpreendimento } from "@/infra/energy/aneelService";
 import { listarDespesasOrgao, DespesaOrcamentaria } from "@/infra/finance/portalTransparenciaService";
+import { buscarDatasets, DadosGovDataset } from "@/infra/infra/dadosGovService";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Code2, MapPin, Zap, DollarSign } from "lucide-react";
+import { Activity, Code2, MapPin, Zap, DollarSign, Database } from "lucide-react";
 
 interface FetchState {
   isLoading: boolean;
@@ -42,6 +44,14 @@ interface PortalTranspFetchState {
   error?: string;
 }
 
+interface DadosGovFetchState {
+  isLoading: boolean;
+  isSuccess: boolean;
+  isError: boolean;
+  datasets?: DadosGovDataset[];
+  error?: string;
+}
+
 const Index = () => {
   const { toast } = useToast();
   const [githubState, setGithubState] = useState<FetchState>({
@@ -69,6 +79,12 @@ const Index = () => {
   });
 
   const [portalState, setPortalState] = useState<PortalTranspFetchState>({
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+  });
+
+  const [dadosGovState, setDadosGovState] = useState<DadosGovFetchState>({
     isLoading: false,
     isSuccess: false,
     isError: false,
@@ -245,6 +261,40 @@ const Index = () => {
     }
   };
 
+  const fetchDadosGovData = async (query: string) => {
+    setDadosGovState({ isLoading: true, isSuccess: false, isError: false });
+    
+    try {
+      const datasets = await buscarDatasets(query, 20);
+      setDadosGovState({ 
+        isLoading: false, 
+        isSuccess: true, 
+        isError: false, 
+        datasets 
+      });
+      toast({
+        title: "Sucesso!",
+        description: `${datasets.length} datasets encontrados`,
+      });
+    } catch (err) {
+      const errorMessage = err instanceof HttpError 
+        ? `${err.message}` 
+        : "Ocorreu um erro inesperado";
+      
+      setDadosGovState({ 
+        isLoading: false, 
+        isSuccess: false, 
+        isError: true, 
+        error: errorMessage 
+      });
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -256,13 +306,14 @@ const Index = () => {
             <MapPin className="h-10 w-10 text-accent" />
             <Zap className="h-10 w-10 text-primary" />
             <DollarSign className="h-10 w-10 text-accent" />
-            <Code2 className="h-10 w-10 text-primary" />
+            <Database className="h-10 w-10 text-primary" />
+            <Code2 className="h-10 w-10 text-accent" />
           </div>
           <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-primary bg-clip-text text-transparent">
             HTTP Client Dashboard
           </h1>
           <p className="text-xl text-center text-muted-foreground max-w-2xl mx-auto">
-            Plataforma completa para APIs brasileiras - IBGE, ANEEL, Portal da Transparência e mais.
+            Plataforma completa para APIs brasileiras - IBGE, ANEEL, Portal da Transparência, dados.gov.br e mais.
           </p>
         </div>
       </div>
@@ -270,6 +321,18 @@ const Index = () => {
       {/* API Cards Section */}
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
+          {/* dados.gov.br - Featured Card */}
+          <DadosGovCard
+            title="dados.gov.br - Datasets Públicos"
+            description="Catálogo de dados abertos do governo federal (DNIT, ANTT, infraestrutura)"
+            isLoading={dadosGovState.isLoading}
+            isSuccess={dadosGovState.isSuccess}
+            isError={dadosGovState.isError}
+            datasets={dadosGovState.datasets}
+            error={dadosGovState.error}
+            onFetch={fetchDadosGovData}
+          />
+
           {/* Portal da Transparência - Featured Card */}
           <PortalTransparenciaCard
             title="Portal da Transparência"
@@ -338,7 +401,7 @@ const Index = () => {
           <h2 className="text-3xl font-bold text-center mb-8 text-foreground">
             Recursos da Infraestrutura
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
             <div className="bg-card border border-border rounded-lg p-6 shadow-card">
               <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Activity className="h-6 w-6 text-primary" />
@@ -396,6 +459,16 @@ const Index = () => {
               <h3 className="text-lg font-semibold mb-2 text-card-foreground">Secure API Keys</h3>
               <p className="text-sm text-muted-foreground">
                 Edge functions com secrets management do Lovable Cloud
+              </p>
+            </div>
+
+            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
+              <div className="h-12 w-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+                <Database className="h-6 w-6 text-accent" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-card-foreground">CKAN API</h3>
+              <p className="text-sm text-muted-foreground">
+                Busca de datasets públicos via dados.gov.br
               </p>
             </div>
           </div>
