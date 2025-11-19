@@ -148,10 +148,24 @@ async function fetchFromAPI(type: string, query: string, rows: number): Promise<
     }
 
     const response = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
+      headers: { 
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; DataAggregator/1.0)',
+      },
     });
 
-    if (!response.ok) return [];
+    if (!response.ok) {
+      console.error(`API Error for ${type} ${query}: ${response.status}`);
+      return [];
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const responseText = await response.text();
+      console.error(`Invalid content type for ${type} ${query}: ${contentType}`);
+      console.error(`Response preview: ${responseText.substring(0, 200)}`);
+      return [];
+    }
 
     const data = await response.json();
     return data.result?.results || [];
