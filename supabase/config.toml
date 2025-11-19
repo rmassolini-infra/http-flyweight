@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.aneel-insights]
 verify_jwt = false
+
+[functions.mapa-insights]
+verify_jwt = false
