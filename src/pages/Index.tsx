@@ -1,7 +1,7 @@
-import InfraBrDadosGov from "@/components/InfraBrDadosGov";
+import InfraBrRealAI from "@/components/InfraBrRealAI";
 
 const Index = () => {
-  return <InfraBrDadosGov />;
+  return <InfraBrRealAI />;
 };
 
 export default Index;
