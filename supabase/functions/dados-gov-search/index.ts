@@ -6,47 +6,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// URL correta da API CKAN do Portal Brasileiro de Dados Abertos
-const DADOS_GOV_ENDPOINTS = [
-  "https://legado.dados.gov.br/api/3/action",
-  "https://dados.gov.br/api/3/action",
-];
+// Nova API REST oficial do Portal Brasileiro de Dados Abertos
+const DADOS_GOV_API_BASE = "https://dados.gov.br/dados/api/publico";
+const DADOS_GOV_TOKEN = Deno.env.get('DADOS_GOV_API_TOKEN');
 
-async function fetchWithFallback(path: string, options: RequestInit): Promise<Response> {
-  let lastError: Error | null = null;
+async function fetchFromAPI(url: string): Promise<Response> {
+  console.log(`Buscando dados de: ${url}`);
   
-  for (const baseUrl of DADOS_GOV_ENDPOINTS) {
-    try {
-      const url = `${baseUrl}${path}`;
-      console.log(`Tentando endpoint: ${url}`);
-      
-      const response = await fetch(url, options);
-      const contentType = response.headers.get('content-type');
-      
-      console.log(`Endpoint ${baseUrl} - Status: ${response.status}, Content-Type: ${contentType}`);
-      
-      // Verificar se a resposta é JSON válida
-      if (response.ok && contentType && contentType.includes('application/json')) {
-        console.log(`✓ Sucesso com endpoint: ${baseUrl}`);
-        return response;
-      }
-      
-      if (!response.ok) {
-        console.warn(`Endpoint ${baseUrl} retornou status ${response.status}`);
-        continue;
-      }
-      
-      if (!contentType || !contentType.includes('application/json')) {
-        console.warn(`Endpoint ${baseUrl} retornou content-type inválido: ${contentType}`);
-        continue;
-      }
-    } catch (error) {
-      console.error(`Erro ao tentar endpoint ${baseUrl}:`, error);
-      lastError = error as Error;
-    }
+  const headers: HeadersInit = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  };
+  
+  if (DADOS_GOV_TOKEN) {
+    headers['Authorization'] = `Bearer ${DADOS_GOV_TOKEN}`;
   }
   
-  throw lastError || new Error('Todos os endpoints falharam');
+  const response = await fetch(url, { headers });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Erro na API: ${response.status} - ${errorText}`);
+    throw new Error(`API error: ${response.status}`);
+  }
+  
+  return response;
 }
 
 serve(async (req) => {
@@ -70,7 +54,6 @@ serve(async (req) => {
         .select('id, title, organization_title, num_resources, tags, metadata_modified');
 
       if (type === 'category') {
-        // Buscar por título ou tags que contenham as palavras-chave
         const keywords = query.split(' OR ').map((k: string) => k.trim().toLowerCase());
         const titleConditions = keywords.map((k: string) => `title.ilike.%${k}%`).join(',');
         dbQuery = dbQuery.or(titleConditions);
@@ -99,37 +82,37 @@ serve(async (req) => {
       }
     }
 
-    // Se não encontrou no cache ou cache desabilitado, buscar da API
-    console.log('Cache miss, buscando da API...');
+    // Buscar da nova API REST
+    console.log('Cache miss, buscando da nova API REST...');
     
-    let path: string;
+    let url: string;
+    const params = new URLSearchParams();
+    params.set('size', rows.toString());
+    
     if (type === 'category') {
-      path = `/package_search?q=${encodeURIComponent(query)}&rows=${rows}`;
+      params.set('palavraChave', query);
+      url = `${DADOS_GOV_API_BASE}/conjuntos-dados?${params.toString()}`;
     } else if (type === 'organization') {
-      path = `/package_search?fq=organization:${encodeURIComponent(org)}&rows=${rows}`;
+      params.set('organizacao', org);
+      url = `${DADOS_GOV_API_BASE}/conjuntos-dados?${params.toString()}`;
     } else {
       throw new Error('Invalid search type');
     }
 
-    const response = await fetchWithFallback(path, {
-      headers: { 
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (compatible; DataAggregator/1.0)',
-      },
-    });
-
+    const response = await fetchFromAPI(url);
     const data = await response.json();
-    const results = data.result?.results || [];
     
-    console.log(`Encontrados ${results.length} datasets da API`);
+    // A nova API retorna dados em formato diferente
+    const results = data.content || [];
+    console.log(`Encontrados ${results.length} datasets da nova API`);
 
     const datasets = results.map((ds: any) => ({
       id: ds.id,
-      title: ds.title,
-      organization: ds.organization?.title || "N/A",
-      resources: ds.resources?.length || 0,
-      tags: ds.tags?.map((t: any) => t.name) || [],
-      metadata_modified: ds.metadata_modified || "",
+      title: ds.titulo || ds.title,
+      organization: ds.organizacao?.nome || ds.organization?.title || "N/A",
+      resources: ds.recursos?.length || ds.resources?.length || 0,
+      tags: ds.tags?.map((t: any) => typeof t === 'string' ? t : t.nome || t.name) || [],
+      metadata_modified: ds.dataModificacao || ds.metadata_modified || "",
     }));
 
     return new Response(
