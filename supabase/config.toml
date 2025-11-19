@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.inteligencia-v2]
 verify_jwt = false
+
+[functions.aneel-insights]
+verify_jwt = false

@@ -6,6 +6,7 @@ import { AneelApiCard } from "@/components/AneelApiCard";
 import { PortalTransparenciaCard } from "@/components/PortalTransparenciaCard";
 import { DadosGovCard } from "@/components/DadosGovCard";
 import { InmetCard } from "@/components/InmetCard";
+import { AneelComprehensiveCard } from "@/components/AneelComprehensiveCard";
 import { Button } from "@/components/ui/button";
 import { httpGetJson, HttpError } from "@/infra/core/httpClient";
 import { listarMunicipios, IbgeMunicipio } from "@/infra/geo/ibgeService";
@@ -447,18 +448,8 @@ const Index = () => {
             onFetch={fetchPortalTranspData}
           />
 
-          {/* ANEEL API - Featured Card */}
-          <AneelApiCard
-            title="ANEEL - Geração Distribuída"
-            description="Dados de empreendimentos de geração distribuída de energia elétrica do Brasil (CSV parsing)"
-            endpoint="dadosabertos.aneel.gov.br/.../empreendimento-geracao-distribuida.csv"
-            isLoading={aneelState.isLoading}
-            isSuccess={aneelState.isSuccess}
-            isError={aneelState.isError}
-            empreendimentos={aneelState.empreendimentos}
-            error={aneelState.error}
-            onFetch={fetchAneelData}
-          />
+          {/* ANEEL - Dados Completos com IA */}
+          <AneelComprehensiveCard />
 
           <IbgeApiCard
             title="IBGE - Municípios Brasileiros"
