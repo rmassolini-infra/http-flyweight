@@ -8,7 +8,7 @@ import { DadosGovCard } from "@/components/DadosGovCard";
 import { InmetCard } from "@/components/InmetCard";
 import { AneelComprehensiveCard } from "@/components/AneelComprehensiveCard";
 import { MAPAComprehensiveCard } from "@/components/MAPAComprehensiveCard";
-import { InfraIntelligenceCard } from "@/components/InfraIntelligenceCard";
+
 import { Button } from "@/components/ui/button";
 import { httpGetJson, HttpError } from "@/infra/core/httpClient";
 import { listarMunicipios, IbgeMunicipio } from "@/infra/geo/ibgeService";
@@ -312,25 +312,6 @@ const Index = () => {
             transparência pública (Portal da Transparência), infraestrutura
             (dados.gov.br/DNIT/ANTT), clima (INMET) e muito mais.
           </p>
-          <div className="flex justify-center gap-4">
-            <Button
-              size="lg"
-              onClick={() => navigate("/inteligencia")}
-              className="gap-2"
-            >
-              <Brain className="h-5 w-5" />
-              Inteligência Infra
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => navigate("/dashboard")}
-              className="gap-2"
-            >
-              <BarChart3 className="h-5 w-5" />
-              Dashboard Agregado
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -391,10 +372,6 @@ const Index = () => {
           {/* MAPA - Agricultura e Pecuária */}
           <MAPAComprehensiveCard />
 
-          {/* Infra Intelligence - Full Spectrum */}
-          <div className="md:col-span-2">
-            <InfraIntelligenceCard />
-          </div>
 
         </div>
       </div>
