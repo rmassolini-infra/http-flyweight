@@ -70,12 +70,17 @@ serve(async (req) => {
       throw new Error('Invalid search type');
     }
 
+    console.log(`Fetching from URL: ${url}`);
+    
     const response = await fetch(url, {
       headers: { 
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (compatible; DataAggregator/1.0)',
       },
     });
+
+    console.log(`Response status: ${response.status}`);
+    console.log(`Response content-type: ${response.headers.get('content-type')}`);
 
     if (!response.ok) {
       const responseText = await response.text();

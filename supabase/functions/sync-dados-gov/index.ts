@@ -147,12 +147,16 @@ async function fetchFromAPI(type: string, query: string, rows: number): Promise<
       url = `${DADOS_GOV_BASE}/package_search?fq=organization:${encodeURIComponent(query)}&rows=${rows}`;
     }
 
+    console.log(`Sync - Fetching ${type}: ${query} from ${url}`);
+    
     const response = await fetch(url, {
       headers: { 
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (compatible; DataAggregator/1.0)',
       },
     });
+
+    console.log(`Sync - Response status for ${query}: ${response.status}, content-type: ${response.headers.get('content-type')}`);
 
     if (!response.ok) {
       console.error(`API Error for ${type} ${query}: ${response.status}`);
