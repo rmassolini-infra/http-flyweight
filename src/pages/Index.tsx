@@ -312,6 +312,16 @@ const Index = () => {
             transparência pública (Portal da Transparência), infraestrutura
             (dados.gov.br/DNIT/ANTT), clima (INMET) e muito mais.
           </p>
+          <div className="flex justify-center">
+            <Button
+              size="lg"
+              onClick={() => navigate("/palantir-report")}
+              className="gap-2"
+            >
+              <Brain className="h-5 w-5" />
+              Palantir Intelligence Report
+            </Button>
+          </div>
         </div>
       </div>
 
