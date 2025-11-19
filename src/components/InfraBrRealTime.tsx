@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Activity, Database, Brain, Shield, 
   Terminal, Zap, Wifi, Lock, 
-  Cpu, Search, Key, Globe, Radio
+  Cpu, Search, Key, Globe, Radio, Bell, AlertTriangle
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { useToast } from '@/hooks/use-toast';
 
 // Limite de itens na tela para não travar o navegador
 const BUFFER_SIZE = 50;
+const ALERT_THRESHOLD = 15000; // Alertar valores acima de R$ 15.000
 
 interface StreamItem {
   id: string;
@@ -26,6 +28,8 @@ interface Insight {
 }
 
 export default function InfraBrRealTime() {
+  const { toast } = useToast();
+  
   // Estados do Stream
   const [streamData, setStreamData] = useState<StreamItem[]>([]);
   const [connectionStatus, setConnectionStatus] = useState('DISCONNECTED');
@@ -36,6 +40,7 @@ export default function InfraBrRealTime() {
   const [insight, setInsight] = useState<Insight | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [showKeyInput, setShowKeyInput] = useState(false);
+  const [alertsEnabled, setAlertsEnabled] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // --- ENGINE DE CONEXÃO REAL-TIME (SSE) ---
@@ -74,6 +79,15 @@ export default function InfraBrRealTime() {
             return newData;
           });
 
+          // Sistema de Alertas
+          if (alertsEnabled && govItem.valor > ALERT_THRESHOLD) {
+            toast({
+              title: "⚠️ ALERTA: Valor Suspeito Detectado",
+              description: `R$ ${govItem.valor.toFixed(2)} - ${govItem.objeto.substring(0, 40)}... (${govItem.responsavel})`,
+              variant: "destructive",
+            });
+          }
+
           // Atualizar métrica de velocidade aleatória para efeito visual
           setThroughput(Math.floor(Math.random() * 500) + 1200);
         }
@@ -89,7 +103,7 @@ export default function InfraBrRealTime() {
     return () => {
       eventSource.close();
     };
-  }, []);
+  }, [alertsEnabled, toast]);
 
   // Auto-scroll no terminal de dados
   useEffect(() => {
@@ -169,9 +183,22 @@ export default function InfraBrRealTime() {
             INFRA<span className="text-cyan-500">.LIVE</span>
           </h1>
         </div>
-        <div className="text-right hidden md:block">
-          <div className="text-xs text-slate-500">DATA THROUGHPUT</div>
-          <div className="text-xl font-bold text-white">{throughput} <span className="text-xs text-cyan-600">TX/s</span></div>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setAlertsEnabled(!alertsEnabled)}
+            className={`flex items-center gap-2 px-3 py-2 rounded border text-xs font-bold transition-all ${
+              alertsEnabled 
+                ? 'bg-cyan-900/20 border-cyan-500/50 text-cyan-400' 
+                : 'bg-slate-900 border-slate-700 text-slate-500'
+            }`}
+          >
+            <Bell className="w-3 h-3" />
+            ALERTAS {alertsEnabled ? 'ON' : 'OFF'}
+          </button>
+          <div className="text-right hidden md:block">
+            <div className="text-xs text-slate-500">DATA THROUGHPUT</div>
+            <div className="text-xl font-bold text-white">{throughput} <span className="text-xs text-cyan-600">TX/s</span></div>
+          </div>
         </div>
       </header>
 
@@ -275,6 +302,10 @@ export default function InfraBrRealTime() {
                  <div className="flex items-center gap-3 text-xs text-slate-400">
                    <Globe className="w-4 h-4" />
                    LATÊNCIA: {Math.floor(Math.random()*40)+20}ms
+                 </div>
+                 <div className="flex items-center gap-3 text-xs text-slate-400">
+                   <AlertTriangle className="w-4 h-4" />
+                   LIMIAR: R$ {ALERT_THRESHOLD.toLocaleString('pt-BR')}
                  </div>
                </div>
 
