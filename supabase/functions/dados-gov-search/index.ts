@@ -6,7 +6,49 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const DADOS_GOV_BASE = "https://dados.gov.br/api/3/action";
+// Múltiplos endpoints para fallback
+const DADOS_GOV_ENDPOINTS = [
+  "https://dados.gov.br/api/3/action",
+  "https://dados.gov.br/api/action",
+  "http://dados.gov.br/api/3/action",
+];
+
+async function fetchWithFallback(path: string, options: RequestInit): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (const baseUrl of DADOS_GOV_ENDPOINTS) {
+    try {
+      const url = `${baseUrl}${path}`;
+      console.log(`Tentando endpoint: ${url}`);
+      
+      const response = await fetch(url, options);
+      const contentType = response.headers.get('content-type');
+      
+      console.log(`Endpoint ${baseUrl} - Status: ${response.status}, Content-Type: ${contentType}`);
+      
+      // Verificar se a resposta é JSON válida
+      if (response.ok && contentType && contentType.includes('application/json')) {
+        console.log(`✓ Sucesso com endpoint: ${baseUrl}`);
+        return response;
+      }
+      
+      if (!response.ok) {
+        console.warn(`Endpoint ${baseUrl} retornou status ${response.status}`);
+        continue;
+      }
+      
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn(`Endpoint ${baseUrl} retornou content-type inválido: ${contentType}`);
+        continue;
+      }
+    } catch (error) {
+      console.error(`Erro ao tentar endpoint ${baseUrl}:`, error);
+      lastError = error as Error;
+    }
+  }
+  
+  throw lastError || new Error('Todos os endpoints falharam');
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -61,55 +103,21 @@ serve(async (req) => {
     // Se não encontrou no cache ou cache desabilitado, buscar da API
     console.log('Cache miss, buscando da API...');
     
-    let url: string;
+    let path: string;
     if (type === 'category') {
-      url = `${DADOS_GOV_BASE}/package_search?q=${encodeURIComponent(query)}&rows=${rows}`;
+      path = `/package_search?q=${encodeURIComponent(query)}&rows=${rows}`;
     } else if (type === 'organization') {
-      url = `${DADOS_GOV_BASE}/package_search?fq=organization:${encodeURIComponent(org)}&rows=${rows}`;
+      path = `/package_search?fq=organization:${encodeURIComponent(org)}&rows=${rows}`;
     } else {
       throw new Error('Invalid search type');
     }
 
-    console.log(`Fetching from URL: ${url}`);
-    
-    const response = await fetch(url, {
+    const response = await fetchWithFallback(path, {
       headers: { 
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (compatible; DataAggregator/1.0)',
       },
     });
-
-    console.log(`Response status: ${response.status}`);
-    console.log(`Response content-type: ${response.headers.get('content-type')}`);
-
-    if (!response.ok) {
-      const responseText = await response.text();
-      console.error(`API Error: ${response.status} - ${response.statusText}`);
-      console.error(`Response body: ${responseText.substring(0, 200)}`);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          results: [],
-          error: `API returned ${response.status}` 
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const responseText = await response.text();
-      console.error(`Invalid content type: ${contentType}`);
-      console.error(`Response body: ${responseText.substring(0, 200)}`);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          results: [],
-          error: 'API returned non-JSON response' 
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     const data = await response.json();
     const results = data.result?.results || [];
