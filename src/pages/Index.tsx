@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { ApiCard } from "@/components/ApiCard";
 import { IbgeApiCard } from "@/components/IbgeApiCard";
+import { AneelApiCard } from "@/components/AneelApiCard";
 import { httpGetJson, HttpError } from "@/infra/core/httpClient";
 import { listarMunicipios, IbgeMunicipio } from "@/infra/geo/ibgeService";
+import { listarEmpreendimentosGD, AneelGdEmpreendimento } from "@/infra/energy/aneelService";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Code2, MapPin } from "lucide-react";
+import { Activity, Code2, MapPin, Zap } from "lucide-react";
 
 interface FetchState {
   isLoading: boolean;
@@ -19,6 +21,14 @@ interface IbgeFetchState {
   isSuccess: boolean;
   isError: boolean;
   municipios?: IbgeMunicipio[];
+  error?: string;
+}
+
+interface AneelFetchState {
+  isLoading: boolean;
+  isSuccess: boolean;
+  isError: boolean;
+  empreendimentos?: AneelGdEmpreendimento[];
   error?: string;
 }
 
@@ -37,6 +47,12 @@ const Index = () => {
   });
 
   const [ibgeState, setIbgeState] = useState<IbgeFetchState>({
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+  });
+
+  const [aneelState, setAneelState] = useState<AneelFetchState>({
     isLoading: false,
     isSuccess: false,
     isError: false,
@@ -110,6 +126,41 @@ const Index = () => {
     }
   };
 
+  const fetchAneelData = async () => {
+    setAneelState({ isLoading: true, isSuccess: false, isError: false });
+    
+    try {
+      // Limit to 500 for faster loading in demo
+      const empreendimentos = await listarEmpreendimentosGD(500);
+      setAneelState({ 
+        isLoading: false, 
+        isSuccess: true, 
+        isError: false, 
+        empreendimentos 
+      });
+      toast({
+        title: "Sucesso!",
+        description: `${empreendimentos.length} empreendimentos de geração distribuída carregados`,
+      });
+    } catch (err) {
+      const errorMessage = err instanceof HttpError 
+        ? `${err.message}` 
+        : "Ocorreu um erro inesperado";
+      
+      setAneelState({ 
+        isLoading: false, 
+        isSuccess: false, 
+        isError: true, 
+        error: errorMessage 
+      });
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchQuoteData = async () => {
     setQuotesState({ isLoading: true, isSuccess: false, isError: false });
     
@@ -153,13 +204,14 @@ const Index = () => {
           <div className="flex items-center justify-center gap-3 mb-4">
             <Activity className="h-12 w-12 text-primary animate-pulse" />
             <MapPin className="h-10 w-10 text-accent" />
-            <Code2 className="h-10 w-10 text-primary" />
+            <Zap className="h-10 w-10 text-primary" />
+            <Code2 className="h-10 w-10 text-accent" />
           </div>
           <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-primary bg-clip-text text-transparent">
             HTTP Client Dashboard
           </h1>
           <p className="text-xl text-center text-muted-foreground max-w-2xl mx-auto">
-            Plataforma moderna para testar APIs com infraestrutura HTTP robusta, incluindo integração com dados geográficos do IBGE Brasil.
+            Plataforma moderna para APIs brasileiras com infraestrutura HTTP robusta - IBGE, ANEEL e dados públicos.
           </p>
         </div>
       </div>
@@ -167,10 +219,23 @@ const Index = () => {
       {/* API Cards Section */}
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
+          {/* ANEEL API - Featured Card */}
+          <AneelApiCard
+            title="ANEEL - Geração Distribuída"
+            description="Dados de empreendimentos de geração distribuída de energia elétrica do Brasil (CSV parsing)"
+            endpoint="dadosabertos.aneel.gov.br/.../empreendimento-geracao-distribuida.csv"
+            isLoading={aneelState.isLoading}
+            isSuccess={aneelState.isSuccess}
+            isError={aneelState.isError}
+            empreendimentos={aneelState.empreendimentos}
+            error={aneelState.error}
+            onFetch={fetchAneelData}
+          />
+
           {/* IBGE API - Featured Card */}
           <IbgeApiCard
             title="IBGE - Municípios Brasileiros"
-            description="Dados oficiais de todos os municípios do Brasil via API do IBGE"
+            description="Dados oficiais de todos os municípios do Brasil via API JSON do IBGE"
             endpoint="servicodados.ibge.gov.br/api/v1/localidades/municipios"
             isLoading={ibgeState.isLoading}
             isSuccess={ibgeState.isSuccess}
@@ -210,7 +275,7 @@ const Index = () => {
           <h2 className="text-3xl font-bold text-center mb-8 text-foreground">
             Recursos da Infraestrutura
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="bg-card border border-border rounded-lg p-6 shadow-card">
               <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Activity className="h-6 w-6 text-primary" />
@@ -248,6 +313,16 @@ const Index = () => {
               <h3 className="text-lg font-semibold mb-2 text-card-foreground">IBGE Integration</h3>
               <p className="text-sm text-muted-foreground">
                 Serviços especializados para dados geográficos brasileiros
+              </p>
+            </div>
+
+            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
+              <div className="h-12 w-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+                <Zap className="h-6 w-6 text-accent" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-card-foreground">CSV Parsing</h3>
+              <p className="text-sm text-muted-foreground">
+                Processamento de grandes arquivos CSV com dados da ANEEL
               </p>
             </div>
           </div>
