@@ -25,3 +25,6 @@ verify_jwt = false
 [functions.sync-dados-gov]
 verify_jwt = false
 
+[functions.deep-intelligence]
+verify_jwt = false
+
