@@ -53,22 +53,22 @@ const handler = async (req: Request): Promise<Response> => {
     const response = await fetch(url, {
       headers: {
         "chave-api-dados": apiKey,
+        "Accept": "application/json",
       },
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorText = await response.text().catch(() => "");
       console.error(`Portal API error: ${response.status} - ${errorText}`);
-      return new Response(
-        JSON.stringify({ 
-          error: `Portal API returned ${response.status}`,
-          details: errorText 
-        }),
-        {
-          status: response.status,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+
+      // Fallback: quando a API do Portal retorna erro (ex: 403),
+      // devolvemos uma lista vazia para não quebrar o frontend
+      const despesasVazias: DespesaOrcamentaria[] = [];
+
+      return new Response(JSON.stringify(despesasVazias), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const data = await response.json();
