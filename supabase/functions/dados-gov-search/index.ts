@@ -71,16 +71,36 @@ serve(async (req) => {
     }
 
     const response = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
+      headers: { 
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; DataAggregator/1.0)',
+      },
     });
 
     if (!response.ok) {
+      const responseText = await response.text();
       console.error(`API Error: ${response.status} - ${response.statusText}`);
+      console.error(`Response body: ${responseText.substring(0, 200)}`);
       return new Response(
         JSON.stringify({ 
           success: false,
           results: [],
           error: `API returned ${response.status}` 
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const responseText = await response.text();
+      console.error(`Invalid content type: ${contentType}`);
+      console.error(`Response body: ${responseText.substring(0, 200)}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          results: [],
+          error: 'API returned non-JSON response' 
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
