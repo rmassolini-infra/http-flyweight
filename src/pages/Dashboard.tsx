@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { buscarDashboardAgregado, DashboardAgregado } from "@/services/dashboardService";
 import { gerarAnaliseInteligenciaCruzada, type CrossIntelligenceResponse } from "@/services/crossIntelligenceService";
-import { buscarDashboardAneelCompleto } from "@/infra/energy/aneelComprehensiveService";
 import { buscarDashboardMAPACompleto } from "@/infra/agriculture/mapaService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
@@ -106,17 +105,14 @@ const Dashboard = () => {
   const handleCrossIntelligence = async () => {
     setLoadingIntelligence(true);
     try {
-      const [aneelData, mapaData] = await Promise.all([
-        buscarDashboardAneelCompleto(),
-        buscarDashboardMAPACompleto(),
-      ]);
+      const mapaData = await buscarDashboardMAPACompleto();
 
       const result = await gerarAnaliseInteligenciaCruzada({
         municipios: {
           total: data!.municipios.length,
           comGD: totalMunicipiosComGD,
         },
-        energia: aneelData,
+        energia: null,
         financas: {
           total: data!.financasPublicas.despesasOrgaoAmostra.length,
           valorTotal: data!.financasPublicas.despesasOrgaoAmostra.reduce((sum, d) => sum + d.valorPago, 0),
@@ -356,8 +352,8 @@ const Dashboard = () => {
                 <p className="font-medium">{data.meta.fontes.ibge ? '✓' : '✗'}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">ANEEL</p>
-                <p className="font-medium">{data.meta.fontes.aneel ? '✓' : '✗'}</p>
+                <p className="text-muted-foreground">Portal Transparência</p>
+                <p className="font-medium">{data.meta.fontes.portalTransparencia ? '✓' : '✗'}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Portal Transparência</p>
