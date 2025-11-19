@@ -2,11 +2,13 @@ import { useState } from "react";
 import { ApiCard } from "@/components/ApiCard";
 import { IbgeApiCard } from "@/components/IbgeApiCard";
 import { AneelApiCard } from "@/components/AneelApiCard";
+import { PortalTransparenciaCard } from "@/components/PortalTransparenciaCard";
 import { httpGetJson, HttpError } from "@/infra/core/httpClient";
 import { listarMunicipios, IbgeMunicipio } from "@/infra/geo/ibgeService";
 import { listarEmpreendimentosGD, AneelGdEmpreendimento } from "@/infra/energy/aneelService";
+import { listarDespesasOrgao, DespesaOrcamentaria } from "@/infra/finance/portalTransparenciaService";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Code2, MapPin, Zap } from "lucide-react";
+import { Activity, Code2, MapPin, Zap, DollarSign } from "lucide-react";
 
 interface FetchState {
   isLoading: boolean;
@@ -32,6 +34,14 @@ interface AneelFetchState {
   error?: string;
 }
 
+interface PortalTranspFetchState {
+  isLoading: boolean;
+  isSuccess: boolean;
+  isError: boolean;
+  despesas?: DespesaOrcamentaria[];
+  error?: string;
+}
+
 const Index = () => {
   const { toast } = useToast();
   const [githubState, setGithubState] = useState<FetchState>({
@@ -53,6 +63,12 @@ const Index = () => {
   });
 
   const [aneelState, setAneelState] = useState<AneelFetchState>({
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+  });
+
+  const [portalState, setPortalState] = useState<PortalTranspFetchState>({
     isLoading: false,
     isSuccess: false,
     isError: false,
@@ -161,6 +177,40 @@ const Index = () => {
     }
   };
 
+  const fetchPortalTranspData = async (codigoOrgao: string, ano: string) => {
+    setPortalState({ isLoading: true, isSuccess: false, isError: false });
+    
+    try {
+      const despesas = await listarDespesasOrgao(codigoOrgao, ano);
+      setPortalState({ 
+        isLoading: false, 
+        isSuccess: true, 
+        isError: false, 
+        despesas 
+      });
+      toast({
+        title: "Sucesso!",
+        description: `${despesas.length} registros de despesas carregados`,
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Ocorreu um erro inesperado";
+      
+      setPortalState({ 
+        isLoading: false, 
+        isSuccess: false, 
+        isError: true, 
+        error: errorMessage 
+      });
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchQuoteData = async () => {
     setQuotesState({ isLoading: true, isSuccess: false, isError: false });
     
@@ -205,13 +255,14 @@ const Index = () => {
             <Activity className="h-12 w-12 text-primary animate-pulse" />
             <MapPin className="h-10 w-10 text-accent" />
             <Zap className="h-10 w-10 text-primary" />
-            <Code2 className="h-10 w-10 text-accent" />
+            <DollarSign className="h-10 w-10 text-accent" />
+            <Code2 className="h-10 w-10 text-primary" />
           </div>
           <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-primary bg-clip-text text-transparent">
             HTTP Client Dashboard
           </h1>
           <p className="text-xl text-center text-muted-foreground max-w-2xl mx-auto">
-            Plataforma moderna para APIs brasileiras com infraestrutura HTTP robusta - IBGE, ANEEL e dados públicos.
+            Plataforma completa para APIs brasileiras - IBGE, ANEEL, Portal da Transparência e mais.
           </p>
         </div>
       </div>
@@ -219,6 +270,18 @@ const Index = () => {
       {/* API Cards Section */}
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
+          {/* Portal da Transparência - Featured Card */}
+          <PortalTransparenciaCard
+            title="Portal da Transparência"
+            description="Despesas orçamentárias do Governo Federal (Edge Function + Secret)"
+            isLoading={portalState.isLoading}
+            isSuccess={portalState.isSuccess}
+            isError={portalState.isError}
+            despesas={portalState.despesas}
+            error={portalState.error}
+            onFetch={fetchPortalTranspData}
+          />
+
           {/* ANEEL API - Featured Card */}
           <AneelApiCard
             title="ANEEL - Geração Distribuída"
@@ -275,7 +338,7 @@ const Index = () => {
           <h2 className="text-3xl font-bold text-center mb-8 text-foreground">
             Recursos da Infraestrutura
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
             <div className="bg-card border border-border rounded-lg p-6 shadow-card">
               <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Activity className="h-6 w-6 text-primary" />
@@ -323,6 +386,16 @@ const Index = () => {
               <h3 className="text-lg font-semibold mb-2 text-card-foreground">CSV Parsing</h3>
               <p className="text-sm text-muted-foreground">
                 Processamento de grandes arquivos CSV com dados da ANEEL
+              </p>
+            </div>
+
+            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
+              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <DollarSign className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-card-foreground">Secure API Keys</h3>
+              <p className="text-sm text-muted-foreground">
+                Edge functions com secrets management do Lovable Cloud
               </p>
             </div>
           </div>
