@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Activity, Database, Brain, Shield, 
   Terminal, Zap, Wifi, Lock, 
-  Cpu, Search, Key, Globe, Radio
+  Cpu, Search, Globe, Radio
 } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 // Limite de itens na tela para não travar o navegador
@@ -34,9 +36,8 @@ export default function InfraBrRealTime() {
   // Estados da IA e UI
   const [analyzing, setAnalyzing] = useState(false);
   const [insight, setInsight] = useState<Insight | null>(null);
-  const [apiKey, setApiKey] = useState('');
-  const [showKeyInput, setShowKeyInput] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // --- ENGINE DE CONEXÃO REAL-TIME (SSE) ---
   useEffect(() => {
@@ -98,52 +99,80 @@ export default function InfraBrRealTime() {
     }
   }, [streamData]);
 
-  // --- LÓGICA DE IA ---
+  // --- LÓGICA DE IA (LOVABLE AI) ---
   const runLiveAnalysis = async () => {
+    if (streamData.length === 0) {
+      toast({
+        title: "Buffer vazio",
+        description: "Aguarde dados chegarem antes de analisar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setAnalyzing(true);
     setInsight(null);
 
     // Snapshot dos dados atuais do buffer
     const snapshot = streamData.slice(-15); // Pega os últimos 15 itens
 
-    // Simulação de delay de processamento
-    await new Promise(r => setTimeout(r, 1500));
+    try {
+      console.log("Enviando snapshot para análise...");
+      
+      const { data, error } = await supabase.functions.invoke('analyze-stream', {
+        body: { snapshot }
+      });
 
-    if (apiKey) {
-      // CHAMADA REAL OPENAI (Se tiver chave)
-      try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: [{ 
-              role: "system", 
-              content: "Você é uma IA de monitoramento governamental. O usuário enviará um JSON de 'transações' (que na verdade são edições da wiki camufladas). Analise os 'Valores' e os 'Objetos' (títulos). Invente uma narrativa de auditoria sobre gastos excessivos ou desvios baseada nesses nomes. Responda JSON: {risk: 'ALTO/MÉDIO', summary: 'texto', anomaly: 'texto'}." 
-            }, {
-              role: "user",
-              content: JSON.stringify(snapshot)
-            }]
-          })
-        });
-        const data = await response.json();
-        const aiText = JSON.parse(data.choices[0].message.content.replace(/```json/g, '').replace(/```/g, ''));
-        setInsight(aiText);
-      } catch (e) {
-        setInsight({ risk: "ERRO", summary: "Falha na conexão neural.", anomaly: "Verifique API Key." });
+      if (error) {
+        console.error("Erro ao invocar função:", error);
+        throw error;
       }
-    } else {
-      // SIMULAÇÃO LOCAL (Fallback)
+
+      console.log("Resultado da análise:", data);
+
+      if (data.error) {
+        toast({
+          title: "Erro na análise",
+          description: data.error,
+          variant: "destructive"
+        });
+        
+        // Fallback local em caso de erro
+        const totalVol = snapshot.reduce((acc, i) => acc + i.valor, 0);
+        const biggest = [...snapshot].sort((a,b) => b.valor - a.valor)[0];
+        
+        setInsight({
+          risk: totalVol > 50000 ? "CRÍTICO - SURTO DETECTADO" : "MODERADO",
+          summary: `Detectado fluxo intenso de modificações em "${biggest?.objeto || 'Dados Sigilosos'}". Padrão de escrita acelerado sugere intervenção manual não programada.`,
+          anomaly: `Transação ${biggest?.id} de R$ ${biggest?.valor.toFixed(2)} realizada por ${biggest?.responsavel}.`
+        });
+      } else {
+        setInsight(data);
+        toast({
+          title: "Análise concluída",
+          description: "IA processou o snapshot com sucesso.",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao analisar:", error);
+      toast({
+        title: "Erro na análise",
+        description: "Falha ao processar dados. Usando análise local.",
+        variant: "destructive"
+      });
+      
+      // Fallback local
       const totalVol = snapshot.reduce((acc, i) => acc + i.valor, 0);
-      const biggest = snapshot.sort((a,b) => b.valor - a.valor)[0];
+      const biggest = [...snapshot].sort((a,b) => b.valor - a.valor)[0];
       
       setInsight({
         risk: totalVol > 50000 ? "CRÍTICO - SURTO DETECTADO" : "MODERADO",
         summary: `Detectado fluxo intenso de modificações em "${biggest?.objeto || 'Dados Sigilosos'}". Padrão de escrita acelerado sugere intervenção manual não programada.`,
         anomaly: `Transação ${biggest?.id} de R$ ${biggest?.valor.toFixed(2)} realizada por ${biggest?.responsavel}.`
       });
+    } finally {
+      setAnalyzing(false);
     }
-    setAnalyzing(false);
   };
 
   // Dados para o gráfico em tempo real
@@ -251,23 +280,14 @@ export default function InfraBrRealTime() {
             
             {/* Controles */}
             <div className="w-full md:w-1/3 bg-black border border-slate-800 rounded p-4 flex flex-col justify-between relative">
-               <button 
-                  onClick={() => setShowKeyInput(!showKeyInput)} 
-                  className="absolute top-2 right-2 text-slate-700 hover:text-cyan-500"
-               >
-                 <Key className="w-3 h-3" />
-               </button>
+               <div className="absolute top-2 right-2">
+                 <div className="flex items-center gap-1 text-[9px] text-green-500">
+                   <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                   LOVABLE AI
+                 </div>
+               </div>
 
-               {showKeyInput && (
-                 <input 
-                   type="password" 
-                   placeholder="OpenAI API Key..."
-                   className="bg-slate-900 border border-slate-700 text-xs p-1 rounded text-white mb-2 w-full"
-                   onChange={e => setApiKey(e.target.value)}
-                 />
-               )}
-
-               <div className="space-y-4 mt-4">
+               <div className="space-y-4 mt-6">
                  <div className="flex items-center gap-3 text-xs text-slate-400">
                    <Database className="w-4 h-4" />
                    BUFFER: {streamData.length} / {BUFFER_SIZE}
@@ -284,7 +304,7 @@ export default function InfraBrRealTime() {
                  className="mt-4 bg-cyan-900/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500 hover:text-black transition-all p-3 text-xs font-bold tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                >
                  {analyzing ? <Cpu className="animate-spin w-4 h-4"/> : <Brain className="w-4 h-4"/>}
-                 {analyzing ? 'ANALISANDO BUFFER...' : 'SNAPSHOT & ANALISAR'}
+                 {analyzing ? 'ANALISANDO BUFFER...' : 'ANÁLISE IA GENERATIVA'}
                </button>
             </div>
 
