@@ -21,3 +21,7 @@ verify_jwt = false
 
 [functions.dados-gov-search]
 verify_jwt = false
+
+[functions.sync-dados-gov]
+verify_jwt = false
+

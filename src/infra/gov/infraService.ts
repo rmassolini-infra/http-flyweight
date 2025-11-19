@@ -125,11 +125,60 @@ async function buscarPorOrganizacao(org: string, rows = 50): Promise<DadosGovDat
 }
 
 /**
+ * Sincroniza dados do dados.gov.br para o cache
+ */
+async function sincronizarCache(): Promise<void> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const url = `${supabaseUrl}/functions/v1/sync-dados-gov`;
+
+  const categories = [
+    { query: "economia OR PIB OR inflação OR emprego OR renda", rows: 150 },
+    { query: "saúde OR hospital OR SUS OR vacina OR COVID", rows: 150 },
+    { query: "educação OR escola OR universidade OR ENEM OR MEC", rows: 150 },
+    { query: "segurança OR crime OR polícia OR violência", rows: 100 },
+    { query: "meio ambiente OR desmatamento OR clima OR IBAMA", rows: 100 },
+    { query: "transporte OR rodovia OR DNIT OR ANTT OR aeroporto", rows: 100 },
+    { query: "trabalho OR emprego OR CAGED OR carteira assinada", rows: 100 },
+    { query: "turismo OR hotel OR visitantes OR patrimônio", rows: 80 },
+  ];
+
+  const organizations = [
+    { org: "instituto-brasileiro-de-geografia-e-estatistica-ibge", rows: 50 },
+    { org: "departamento-nacional-de-infraestrutura-de-transportes-dnit", rows: 50 },
+    { org: "ministerio-da-educacao", rows: 50 },
+    { org: "ministerio-da-saude", rows: 50 },
+    { org: "ministerio-de-minas-e-energia", rows: 50 },
+    { org: "agencia-nacional-de-transportes-terrestres-antt", rows: 50 },
+    { org: "ministerio-da-agricultura-pecuaria-e-abastecimento", rows: 50 },
+  ];
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': supabaseKey,
+    },
+    body: JSON.stringify({ categories, organizations, forceSync: false }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erro ao sincronizar cache: ${response.status}`);
+  }
+
+  const result = await response.json();
+  console.log('Sincronização:', result);
+}
+
+/**
  * Agrega TODOS os dados possíveis do dados.gov.br em categorias
- * Máxima cobertura de dados
+ * Máxima cobertura de dados com cache inteligente
  */
 export async function buscarDashboardInfra(): Promise<InfraDashboard> {
   console.log("Iniciando agregação de dados.gov.br...");
+
+  // Iniciar sincronização do cache em background (não aguardar)
+  sincronizarCache().catch(err => console.warn('Cache sync error:', err));
 
   // Buscar datasets por categorias temáticas principais
   const [
