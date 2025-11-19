@@ -12,8 +12,6 @@ const DADOS_GOV_ENDPOINTS = [
   "https://dados.gov.br/api/3/action",
 ];
 
-const DADOS_GOV_TOKEN = Deno.env.get('DADOS_GOV_API_TOKEN');
-
 async function fetchWithFallback(path: string, options: RequestInit): Promise<Response> {
   let lastError: Error | null = null;
   
@@ -22,12 +20,7 @@ async function fetchWithFallback(path: string, options: RequestInit): Promise<Re
       const url = `${baseUrl}${path}`;
       console.log(`Tentando endpoint: ${url}`);
       
-      const headers = {
-        ...options.headers,
-        ...(DADOS_GOV_TOKEN ? { 'Authorization': `Bearer ${DADOS_GOV_TOKEN}` } : {})
-      };
-      
-      const response = await fetch(url, { ...options, headers });
+      const response = await fetch(url, options);
       const contentType = response.headers.get('content-type');
       
       console.log(`Endpoint ${baseUrl} - Status: ${response.status}, Content-Type: ${contentType}`);
