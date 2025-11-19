@@ -18,3 +18,6 @@ verify_jwt = false
 
 [functions.infra-intelligence]
 verify_jwt = false
+
+[functions.dados-gov-search]
+verify_jwt = false
