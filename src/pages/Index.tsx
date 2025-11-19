@@ -4,13 +4,15 @@ import { IbgeApiCard } from "@/components/IbgeApiCard";
 import { AneelApiCard } from "@/components/AneelApiCard";
 import { PortalTransparenciaCard } from "@/components/PortalTransparenciaCard";
 import { DadosGovCard } from "@/components/DadosGovCard";
+import { InmetCard } from "@/components/InmetCard";
 import { httpGetJson, HttpError } from "@/infra/core/httpClient";
 import { listarMunicipios, IbgeMunicipio } from "@/infra/geo/ibgeService";
 import { listarEmpreendimentosGD, AneelGdEmpreendimento } from "@/infra/energy/aneelService";
 import { listarDespesasOrgao, DespesaOrcamentaria } from "@/infra/finance/portalTransparenciaService";
 import { buscarDatasets, DadosGovDataset } from "@/infra/infra/dadosGovService";
+import { listarEstacoesAutomaticas, obterEstacoesExemplo, InmetEstacao } from "@/infra/climate/inmetService";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Code2, MapPin, Zap, DollarSign, Database } from "lucide-react";
+import { Activity, Code2, MapPin, Zap, DollarSign, Database, CloudRain } from "lucide-react";
 
 interface FetchState {
   isLoading: boolean;
@@ -52,6 +54,14 @@ interface DadosGovFetchState {
   error?: string;
 }
 
+interface InmetFetchState {
+  isLoading: boolean;
+  isSuccess: boolean;
+  isError: boolean;
+  stations?: InmetEstacao[];
+  error?: string;
+}
+
 const Index = () => {
   const { toast } = useToast();
   const [githubState, setGithubState] = useState<FetchState>({
@@ -85,6 +95,12 @@ const Index = () => {
   });
 
   const [dadosGovState, setDadosGovState] = useState<DadosGovFetchState>({
+    isLoading: false,
+    isSuccess: false,
+    isError: false,
+  });
+
+  const [inmetState, setInmetState] = useState<InmetFetchState>({
     isLoading: false,
     isSuccess: false,
     isError: false,
@@ -295,6 +311,54 @@ const Index = () => {
     }
   };
 
+  const fetchInmetData = async () => {
+    setInmetState({ isLoading: true, isSuccess: false, isError: false });
+    
+    try {
+      let stations = await listarEstacoesAutomaticas();
+      
+      // Se não conseguir dados da API, usar dados de exemplo
+      if (stations.length === 0) {
+        stations = obterEstacoesExemplo();
+        setInmetState({ 
+          isLoading: false, 
+          isSuccess: true, 
+          isError: false, 
+          stations,
+        });
+        toast({
+          title: "Dados de Exemplo",
+          description: "Exibindo estações de exemplo (API indisponível)",
+          variant: "default",
+        });
+      } else {
+        setInmetState({ 
+          isLoading: false, 
+          isSuccess: true, 
+          isError: false, 
+          stations 
+        });
+        toast({
+          title: "Sucesso!",
+          description: `${stations.length} estações meteorológicas carregadas`,
+        });
+      }
+    } catch (err) {
+      // Em caso de erro, usar dados de exemplo
+      const stations = obterEstacoesExemplo();
+      setInmetState({ 
+        isLoading: false, 
+        isSuccess: true, 
+        isError: false, 
+        stations,
+      });
+      toast({
+        title: "Dados de Exemplo",
+        description: "Exibindo estações de exemplo (API indisponível)",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -304,16 +368,17 @@ const Index = () => {
           <div className="flex items-center justify-center gap-3 mb-4">
             <Activity className="h-12 w-12 text-primary animate-pulse" />
             <MapPin className="h-10 w-10 text-accent" />
-            <Zap className="h-10 w-10 text-primary" />
-            <DollarSign className="h-10 w-10 text-accent" />
-            <Database className="h-10 w-10 text-primary" />
-            <Code2 className="h-10 w-10 text-accent" />
+            <CloudRain className="h-10 w-10 text-primary" />
+            <Zap className="h-10 w-10 text-accent" />
+            <DollarSign className="h-10 w-10 text-primary" />
+            <Database className="h-10 w-10 text-accent" />
+            <Code2 className="h-10 w-10 text-primary" />
           </div>
           <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-primary bg-clip-text text-transparent">
             HTTP Client Dashboard
           </h1>
-          <p className="text-xl text-center text-muted-foreground max-w-2xl mx-auto">
-            Plataforma completa para APIs brasileiras - IBGE, ANEEL, Portal da Transparência, dados.gov.br e mais.
+          <p className="text-xl text-center text-muted-foreground max-w-3xl mx-auto">
+            Plataforma completa para APIs brasileiras - Meteorologia, Geografia, Energia, Transparência, Dados Abertos e mais.
           </p>
         </div>
       </div>
@@ -321,6 +386,18 @@ const Index = () => {
       {/* API Cards Section */}
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
+          {/* INMET - Featured Card */}
+          <InmetCard
+            title="INMET - Estações Meteorológicas"
+            description="Instituto Nacional de Meteorologia - Rede de estações automáticas do Brasil"
+            isLoading={inmetState.isLoading}
+            isSuccess={inmetState.isSuccess}
+            isError={inmetState.isError}
+            stations={inmetState.stations}
+            error={inmetState.error}
+            onFetch={fetchInmetData}
+          />
+
           {/* dados.gov.br - Featured Card */}
           <DadosGovCard
             title="dados.gov.br - Datasets Públicos"
@@ -401,7 +478,7 @@ const Index = () => {
           <h2 className="text-3xl font-bold text-center mb-8 text-foreground">
             Recursos da Infraestrutura
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-card border border-border rounded-lg p-6 shadow-card">
               <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Activity className="h-6 w-6 text-primary" />
@@ -436,9 +513,9 @@ const Index = () => {
               <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <MapPin className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-card-foreground">IBGE Integration</h3>
+              <h3 className="text-lg font-semibold mb-2 text-card-foreground">Geolocalização</h3>
               <p className="text-sm text-muted-foreground">
-                Serviços especializados para dados geográficos brasileiros
+                APIs geográficas com dados do IBGE e INMET
               </p>
             </div>
 
@@ -469,6 +546,16 @@ const Index = () => {
               <h3 className="text-lg font-semibold mb-2 text-card-foreground">CKAN API</h3>
               <p className="text-sm text-muted-foreground">
                 Busca de datasets públicos via dados.gov.br
+              </p>
+            </div>
+
+            <div className="bg-card border border-border rounded-lg p-6 shadow-card">
+              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <CloudRain className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-card-foreground">Clima & Meteorologia</h3>
+              <p className="text-sm text-muted-foreground">
+                Dados meteorológicos do INMET com estações automáticas
               </p>
             </div>
           </div>
