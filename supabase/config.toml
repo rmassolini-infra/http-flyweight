@@ -1,5 +1,7 @@
 project_id = "xadbbuieaxexqguwolkh"
 
+[functions.dashboard-agregado]
+verify_jwt = false
 
 [functions.portal-transparencia]
 verify_jwt = false
@@ -14,4 +16,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.cross-intelligence]
+verify_jwt = false
+
+[functions.infra-intelligence]
 verify_jwt = false
