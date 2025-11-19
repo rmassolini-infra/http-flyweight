@@ -1,1 +1,7 @@
 project_id = "xadbbuieaxexqguwolkh"
+
+[functions.dashboard-agregado]
+verify_jwt = false
+
+[functions.portal-transparencia]
+verify_jwt = false
