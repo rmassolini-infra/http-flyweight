@@ -70,17 +70,6 @@ interface InmetFetchState {
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [githubState, setGithubState] = useState<FetchState>({
-    isLoading: false,
-    isSuccess: false,
-    isError: false,
-  });
-  
-  const [quotesState, setQuotesState] = useState<FetchState>({
-    isLoading: false,
-    isSuccess: false,
-    isError: false,
-  });
 
   const [ibgeState, setIbgeState] = useState<IbgeFetchState>({
     isLoading: false,
@@ -112,39 +101,6 @@ const Index = () => {
     isError: false,
   });
 
-  const fetchGithubData = async () => {
-    setGithubState({ isLoading: true, isSuccess: false, isError: false });
-    
-    try {
-      const data = await httpGetJson("https://api.github.com/users/github");
-      setGithubState({ 
-        isLoading: false, 
-        isSuccess: true, 
-        isError: false, 
-        data 
-      });
-      toast({
-        title: "Success!",
-        description: "GitHub data fetched successfully",
-      });
-    } catch (err) {
-      const errorMessage = err instanceof HttpError 
-        ? `${err.message}` 
-        : "An unexpected error occurred";
-      
-      setGithubState({ 
-        isLoading: false, 
-        isSuccess: false, 
-        isError: true, 
-        error: errorMessage 
-      });
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
 
   const fetchIbgeData = async () => {
     setIbgeState({ isLoading: true, isSuccess: false, isError: false });
@@ -249,39 +205,6 @@ const Index = () => {
     }
   };
 
-  const fetchQuoteData = async () => {
-    setQuotesState({ isLoading: true, isSuccess: false, isError: false });
-    
-    try {
-      const data = await httpGetJson("https://api.quotable.io/random");
-      setQuotesState({ 
-        isLoading: false, 
-        isSuccess: true, 
-        isError: false, 
-        data 
-      });
-      toast({
-        title: "Success!",
-        description: "Quote fetched successfully",
-      });
-    } catch (err) {
-      const errorMessage = err instanceof HttpError 
-        ? `${err.message}` 
-        : "An unexpected error occurred";
-      
-      setQuotesState({ 
-        isLoading: false, 
-        isSuccess: false, 
-        isError: true, 
-        error: errorMessage 
-      });
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
 
   const fetchDadosGovData = async (query: string) => {
     setDadosGovState({ isLoading: true, isSuccess: false, isError: false });
@@ -473,29 +396,6 @@ const Index = () => {
             <PalantirCard />
           </div>
 
-          <ApiCard
-            title="GitHub User API"
-            description="Fetch user information from GitHub's public API"
-            endpoint="https://api.github.com/users/github"
-            isLoading={githubState.isLoading}
-            isSuccess={githubState.isSuccess}
-            isError={githubState.isError}
-            data={githubState.data}
-            error={githubState.error}
-            onFetch={fetchGithubData}
-          />
-
-          <ApiCard
-            title="Random Quote API"
-            description="Get inspirational quotes from quotable.io"
-            endpoint="https://api.quotable.io/random"
-            isLoading={quotesState.isLoading}
-            isSuccess={quotesState.isSuccess}
-            isError={quotesState.isError}
-            data={quotesState.data}
-            error={quotesState.error}
-            onFetch={fetchQuoteData}
-          />
         </div>
       </div>
     </div>
