@@ -226,29 +226,86 @@ export function InfraIntelligenceCard() {
                 <div className="space-y-4">
                   <div className="p-4 border rounded-lg palantir-border">
                     <h4 className="font-mono text-sm font-semibold mb-4">Cobertura Nacional</h4>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs font-mono">Economia</span>
-                          <span className="text-xs font-mono text-primary">{((data.economia.total / data.meta.totalDatasets) * 100).toFixed(1)}%</span>
+                    {data.meta.totalDatasets > 0 ? (
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs font-mono">Economia</span>
+                            <span className="text-xs font-mono text-primary">
+                              {data.economia.total} datasets ({((data.economia.total / data.meta.totalDatasets) * 100).toFixed(1)}%)
+                            </span>
+                          </div>
+                          <Progress value={(data.economia.total / data.meta.totalDatasets) * 100} />
                         </div>
-                        <Progress value={(data.economia.total / data.meta.totalDatasets) * 100} />
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs font-mono">Saúde</span>
-                          <span className="text-xs font-mono text-primary">{((data.saude.total / data.meta.totalDatasets) * 100).toFixed(1)}%</span>
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs font-mono">Saúde</span>
+                            <span className="text-xs font-mono text-primary">
+                              {data.saude.total} datasets ({((data.saude.total / data.meta.totalDatasets) * 100).toFixed(1)}%)
+                            </span>
+                          </div>
+                          <Progress value={(data.saude.total / data.meta.totalDatasets) * 100} />
                         </div>
-                        <Progress value={(data.saude.total / data.meta.totalDatasets) * 100} />
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs font-mono">Educação</span>
-                          <span className="text-xs font-mono text-primary">{((data.educacao.total / data.meta.totalDatasets) * 100).toFixed(1)}%</span>
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs font-mono">Educação</span>
+                            <span className="text-xs font-mono text-primary">
+                              {data.educacao.total} datasets ({((data.educacao.total / data.meta.totalDatasets) * 100).toFixed(1)}%)
+                            </span>
+                          </div>
+                          <Progress value={(data.educacao.total / data.meta.totalDatasets) * 100} />
                         </div>
-                        <Progress value={(data.educacao.total / data.meta.totalDatasets) * 100} />
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs font-mono">Segurança</span>
+                            <span className="text-xs font-mono text-primary">
+                              {data.seguranca.total} datasets ({((data.seguranca.total / data.meta.totalDatasets) * 100).toFixed(1)}%)
+                            </span>
+                          </div>
+                          <Progress value={(data.seguranca.total / data.meta.totalDatasets) * 100} />
+                        </div>
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs font-mono">Meio Ambiente</span>
+                            <span className="text-xs font-mono text-primary">
+                              {data.meioAmbiente.total} datasets ({((data.meioAmbiente.total / data.meta.totalDatasets) * 100).toFixed(1)}%)
+                            </span>
+                          </div>
+                          <Progress value={(data.meioAmbiente.total / data.meta.totalDatasets) * 100} />
+                        </div>
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs font-mono">Transportes</span>
+                            <span className="text-xs font-mono text-primary">
+                              {data.transportes.total} datasets ({((data.transportes.total / data.meta.totalDatasets) * 100).toFixed(1)}%)
+                            </span>
+                          </div>
+                          <Progress value={(data.transportes.total / data.meta.totalDatasets) * 100} />
+                        </div>
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs font-mono">Trabalho</span>
+                            <span className="text-xs font-mono text-primary">
+                              {data.trabalho.total} datasets ({((data.trabalho.total / data.meta.totalDatasets) * 100).toFixed(1)}%)
+                            </span>
+                          </div>
+                          <Progress value={(data.trabalho.total / data.meta.totalDatasets) * 100} />
+                        </div>
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs font-mono">Turismo</span>
+                            <span className="text-xs font-mono text-primary">
+                              {data.turismo.total} datasets ({((data.turismo.total / data.meta.totalDatasets) * 100).toFixed(1)}%)
+                            </span>
+                          </div>
+                          <Progress value={(data.turismo.total / data.meta.totalDatasets) * 100} />
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground font-mono text-center py-4">
+                        Nenhum dado disponível para exibir cobertura
+                      </p>
+                    )}
                   </div>
                 </div>
               </TabsContent>
