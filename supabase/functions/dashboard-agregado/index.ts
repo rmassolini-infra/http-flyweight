@@ -22,11 +22,19 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Dashboard agregado - iniciando...");
 
     // 1) Buscar municípios do IBGE
+    console.log("Buscando municípios do IBGE...");
     const ibgeUrl = "https://servicodados.ibge.gov.br/api/v1/localidades/municipios";
     const municipiosResponse = await fetch(ibgeUrl);
     
     if (!municipiosResponse.ok) {
       throw new Error(`IBGE API error: ${municipiosResponse.status}`);
+    }
+    
+    const contentTypeIbge = municipiosResponse.headers.get("content-type");
+    if (!contentTypeIbge || !contentTypeIbge.includes("application/json")) {
+      const text = await municipiosResponse.text();
+      console.error("IBGE retornou resposta não-JSON:", text.substring(0, 200));
+      throw new Error("IBGE API retornou resposta inválida");
     }
     
     const municipios = await municipiosResponse.json();
@@ -91,15 +99,33 @@ const handler = async (req: Request): Promise<Response> => {
     let datasetsAntt: any[] = [];
 
     if (dnitResponse.status === "fulfilled" && dnitResponse.value.ok) {
-      const data = await dnitResponse.value.json();
-      datasetsDnit = data.result?.results || [];
-      console.log(`Datasets DNIT: ${datasetsDnit.length}`);
+      try {
+        const contentType = dnitResponse.value.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await dnitResponse.value.json();
+          datasetsDnit = data.result?.results || [];
+          console.log(`Datasets DNIT: ${datasetsDnit.length}`);
+        } else {
+          console.warn("dados.gov.br (DNIT) retornou resposta não-JSON");
+        }
+      } catch (err) {
+        console.error("Erro ao processar dados DNIT:", err);
+      }
     }
 
     if (anttResponse.status === "fulfilled" && anttResponse.value.ok) {
-      const data = await anttResponse.value.json();
-      datasetsAntt = data.result?.results || [];
-      console.log(`Datasets ANTT: ${datasetsAntt.length}`);
+      try {
+        const contentType = anttResponse.value.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await anttResponse.value.json();
+          datasetsAntt = data.result?.results || [];
+          console.log(`Datasets ANTT: ${datasetsAntt.length}`);
+        } else {
+          console.warn("dados.gov.br (ANTT) retornou resposta não-JSON");
+        }
+      } catch (err) {
+        console.error("Erro ao processar dados ANTT:", err);
+      }
     }
 
     // 5) Montar payload agregado
