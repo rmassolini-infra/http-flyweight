@@ -1,17 +1,23 @@
 import { IbgeMunicipio } from "../geo/ibgeService";
-import { AneelGdEmpreendimento } from "../energy/aneelService";
 import { DespesaOrcamentaria } from "../finance/portalTransparenciaService";
 import { DadosGovDataset } from "../infra/dadosGovService";
 
+/**
+ * INPUT padrão (igual v1, com campos extras opcionais para série histórica).
+ */
 export interface IntelligenceInput {
   municipios: IbgeMunicipio[];
-  potenciaGD: Record<string, number>;
+  potenciaGD: Record<string, number>; // codMunicipio -> kW GD
   despesas: DespesaOrcamentaria[];
   datasetsInfra: {
     dnit: DadosGovDataset[];
     antt: DadosGovDataset[];
   };
-  clima?: any; // opcional (INMET)
+  clima?: any;
+
+  // opcional v2 – se você quiser plugar depois:
+  historicoPotenciaGD?: Record<string, Record<string, number>>; // ano -> codMunicipio -> kW
+  historicoDespesas?: Record<string, DespesaOrcamentaria[]>; // ano -> lista
 }
 
 export interface Insight {
@@ -21,12 +27,46 @@ export interface Insight {
   dadosRelacionados?: any;
 }
 
+/**
+ * Saída v2 – além dos insights textuais, traz um ranking com scores.
+ */
+export interface ScoredMunicipioInsight {
+  municipioId: number;
+  municipioNome: string;
+  uf: string;
+
+  // features que usamos pra gerar os scores
+  features: {
+    potenciaGDkW: number;
+    potenciaGDPerCapitaAprox: number;
+    gastoPublicoRelativo?: number; // se conseguirmos ligar algum gasto ao município (por enquanto opcional)
+  };
+
+  // Scores (0–100) para cada dimensão
+  scores: {
+    oportunidadeSolar: number;        // baixa GD per capita => maior score
+    riscoSobrecarga: number;         // alta GD total => maior score
+    prioridadeInvestimentoPublico: number; // placeholder (pode evoluir com dados fiscais municipais)
+    prioridadeVisitaComercial: number;     // combinação ponderada dos outros scores
+  };
+}
+
+export interface IntelligenceV2Output {
+  insightsTextuais: Insight[];
+  municipiosRankeados: ScoredMunicipioInsight[];
+  metadadosModelo: {
+    versao: string;
+    descricao: string;
+    parametros: Record<string, any>;
+  };
+}
+
+/**
+ * v1 – mantém se você já estiver usando em algum lugar.
+ */
 export function gerarInsightsDeInteligencia(input: IntelligenceInput): Insight[] {
   const insights: Insight[] = [];
 
-  // ---------------------------------------------------------
-  // 1. OPORTUNIDADE – Municípios com baixa geração distribuída
-  // ---------------------------------------------------------
   const municipiosComPoucaGD = input.municipios
     .map((m) => ({
       nome: m.nome,
@@ -35,25 +75,21 @@ export function gerarInsightsDeInteligencia(input: IntelligenceInput): Insight[]
       potencia: input.potenciaGD[m.id] ?? 0,
     }))
     .sort((a, b) => a.potencia - b.potencia)
-    .slice(0, 20); // top 20 piores
+    .slice(0, 20);
 
   insights.push({
     tipo: "oportunidade",
     titulo: "Municípios com baixa geração solar distribuída",
     descricao:
-      "Estes municípios possuem baixa ou nenhuma potência instalada de GD. São hotspots imediatos para expansão de prospecção ou projetos de infraestrutura local.",
+      "Estes municípios possuem baixa ou nenhuma potência instalada de GD. São hotspots imediatos para expansão comercial e projetos de infraestrutura local.",
     dadosRelacionados: municipiosComPoucaGD,
   });
 
-  // ---------------------------------------------------------
-  // 2. CORRELAÇÃO – População × Potência GD
-  // ---------------------------------------------------------
   const correlacaoPopGD = input.municipios
     .map((m) => {
       const potencia = input.potenciaGD[m.id] ?? 0;
       const populacaoAprox =
-        Number(m.microrregiao?.mesorregiao?.UF?.id) * 500; // placeholder: IBGE real pode usar função obterPopulacaoMunicipio()
-
+        Number(m.microrregiao?.mesorregiao?.UF?.id ?? 1) * 500; // placeholder para não quebrar
       return {
         municipio: m.nome,
         potencia,
@@ -72,9 +108,6 @@ export function gerarInsightsDeInteligencia(input: IntelligenceInput): Insight[]
     dadosRelacionados: correlacaoPopGD,
   });
 
-  // ---------------------------------------------------------
-  // 3. ALERTA – Gastos públicos incompatíveis com infraestrutura local
-  // ---------------------------------------------------------
   const gastosAcimaDaMédia = input.despesas
     .filter((d) => d.valorPago > 50_000_000)
     .map((d) => ({
@@ -93,31 +126,17 @@ export function gerarInsightsDeInteligencia(input: IntelligenceInput): Insight[]
     });
   }
 
-  // ---------------------------------------------------------
-  // 4. OPORTUNIDADE – Datasets de infraestrutura disponíveis
-  // ---------------------------------------------------------
   insights.push({
     tipo: "oportunidade",
-    titulo: "Novos datasets estratégicos de infraestrutura (DNIT & ANTT)",
+    titulo: "Datasets estratégicos de infraestrutura (DNIT & ANTT)",
     descricao:
-      "Há novos recursos de rodovias, ferrovias, logística e concessões disponíveis. Podem ser ingestados para análises de risco, planejamento de obras e otimização de frotas.",
+      "Há recursos de rodovias, ferrovias, logística e concessões disponíveis. Podem ser ingestados para análises de risco, planejamento de obras e otimização de frotas.",
     dadosRelacionados: {
-      dnit: input.datasetsInfra.dnit.map((d) => ({
-        titulo: d.title,
-        org: d.organization.title,
-        recursos: d.resources.map((r) => r.url),
-      })),
-      antt: input.datasetsInfra.antt.map((d) => ({
-        titulo: d.title,
-        org: d.organization.title,
-        recursos: d.resources.map((r) => r.url),
-      })),
+      dnit: input.datasetsInfra.dnit.map((d) => d.title),
+      antt: input.datasetsInfra.antt.map((d) => d.title),
     },
   });
 
-  // ---------------------------------------------------------
-  // 5. RISCO – Municípios com alta GD e potencial sobrecarga futura
-  // ---------------------------------------------------------
   const municipiosComRiscoDeSobrecarga = Object.entries(input.potenciaGD)
     .map(([cod, potencia]) => {
       const m = input.municipios.find((x) => String(x.id) === cod);
@@ -136,31 +155,10 @@ export function gerarInsightsDeInteligencia(input: IntelligenceInput): Insight[]
     tipo: "risco",
     titulo: "Risco de sobrecarga: municípios com muita potência GD instalada",
     descricao:
-      "Locais com alta densidade de GD podem enfrentar desafios de estabilidade, compensação e futura redução de créditos — bom para oferta de consultoria técnica.",
+      "Locais com alta densidade de GD podem enfrentar desafios de estabilidade, compensação e futura redução de créditos — bons candidatos para consultoria técnica e soluções de gestão.",
     dadosRelacionados: municipiosComRiscoDeSobrecarga,
   });
 
-  // ---------------------------------------------------------
-  // 6. CORRELAÇÃO – Infraestrutura logística próxima aos clusters de GD
-  // ---------------------------------------------------------
-  if (input.datasetsInfra.dnit.length > 0) {
-    insights.push({
-      tipo: "correlacao",
-      titulo: "Correlação entre clusters solares e infraestrutura logística",
-      descricao:
-        "A presença de rodovias, ferrovias e portos próximos aos clusters de GD sugere regiões com maior maturidade econômica e abertura para projetos de alto CAPEX.",
-      dadosRelacionados: {
-        dnitDatasets: input.datasetsInfra.dnit.length,
-        anttDatasets: input.datasetsInfra.antt.length,
-        recomendacao:
-          "Analisar sobreposição espacial entre polos de GD e infraestrutura para identificar regiões com potencial de parques solares, usinas híbridas e logística de manutenção.",
-      },
-    });
-  }
-
-  // ---------------------------------------------------------
-  // 7. ALERTA – (Opcional) Clima: eventos agudos impactando ativos
-  // ---------------------------------------------------------
   if (input.clima) {
     insights.push({
       tipo: "alerta",
@@ -172,4 +170,108 @@ export function gerarInsightsDeInteligencia(input: IntelligenceInput): Insight[]
   }
 
   return insights;
+}
+
+/**
+ * V2 – com scores numéricos e pronto para plugar ML.
+ */
+export function gerarInsightsDeInteligenciaV2(
+  input: IntelligenceInput
+): IntelligenceV2Output {
+  const insightsTextuais = gerarInsightsDeInteligencia(input);
+
+  // --------- Normalização básica para scores 0–100 ---------
+  const municipios = input.municipios;
+
+  // Aproximação grosseira de população (até você plugar o dado real):
+  const featuresPorMunicipio = municipios.map((m) => {
+    const potenciaGDkW = input.potenciaGD[m.id] ?? 0;
+    const populacaoAprox =
+      Number(m.microrregiao?.mesorregiao?.UF?.id ?? 1) * 500;
+
+    const potenciaGDPerCapitaAprox =
+      populacaoAprox > 0 ? potenciaGDkW / populacaoAprox : 0;
+
+    return {
+      municipio: m,
+      potenciaGDkW,
+      populacaoAprox,
+      potenciaGDPerCapitaAprox,
+    };
+  });
+
+  const maxPotencia = Math.max(
+    1,
+    ...featuresPorMunicipio.map((f) => f.potenciaGDkW)
+  );
+  const maxPotPerCapita = Math.max(
+    0.00001,
+    ...featuresPorMunicipio.map((f) => f.potenciaGDPerCapitaAprox)
+  );
+
+  function clamp01(v: number) {
+    if (!Number.isFinite(v)) return 0;
+    return Math.min(1, Math.max(0, v));
+  }
+
+  const municipiosRankeados: ScoredMunicipioInsight[] =
+    featuresPorMunicipio.map((f) => {
+      const baseOportunidade =
+        1 - clamp01(f.potenciaGDPerCapitaAprox / maxPotPerCapita);
+      const baseRiscoSobrecarga = clamp01(f.potenciaGDkW / maxPotencia);
+
+      // Sem dados fiscais municipais diretos ainda => placeholder 0.5
+      const prioridadeInvestimentoPublico = 0.5;
+
+      // Combinação ponderada – aqui você brinca com "o modelo":
+      const prioridadeVisitaComercial =
+        0.6 * baseOportunidade +
+        0.3 * baseRiscoSobrecarga +
+        0.1 * prioridadeInvestimentoPublico;
+
+      return {
+        municipioId: f.municipio.id,
+        municipioNome: f.municipio.nome,
+        uf: f.municipio.microrregiao?.mesorregiao?.UF?.sigla ?? "",
+        features: {
+          potenciaGDkW: f.potenciaGDkW,
+          potenciaGDPerCapitaAprox: f.potenciaGDPerCapitaAprox,
+        },
+        scores: {
+          oportunidadeSolar: Math.round(baseOportunidade * 100),
+          riscoSobrecarga: Math.round(baseRiscoSobrecarga * 100),
+          prioridadeInvestimentoPublico: Math.round(
+            prioridadeInvestimentoPublico * 100
+          ),
+          prioridadeVisitaComercial: Math.round(
+            prioridadeVisitaComercial * 100
+          ),
+        },
+      };
+    });
+
+  // Ordena por prioridade de visita comercial (maior primeiro)
+  municipiosRankeados.sort(
+    (a, b) =>
+      b.scores.prioridadeVisitaComercial -
+      a.scores.prioridadeVisitaComercial
+  );
+
+  const metadadosModelo = {
+    versao: "2.0.0",
+    descricao:
+      "Motor heurístico de inteligência territorial e energética. Usa GD, população aproximada e estrutura para ser evoluído com ML supervisionado.",
+    parametros: {
+      pesoOportunidadeSolar: 0.6,
+      pesoRiscoSobrecarga: 0.3,
+      pesoInvestimentoPublico: 0.1,
+      normalizacao: "min-max aproximada em 0–1",
+    },
+  };
+
+  return {
+    insightsTextuais,
+    municipiosRankeados,
+    metadadosModelo,
+  };
 }
