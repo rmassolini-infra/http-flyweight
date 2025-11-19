@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ApiCard } from "@/components/ApiCard";
 import { IbgeApiCard } from "@/components/IbgeApiCard";
 import { AneelApiCard } from "@/components/AneelApiCard";
 import { PortalTransparenciaCard } from "@/components/PortalTransparenciaCard";
 import { DadosGovCard } from "@/components/DadosGovCard";
 import { InmetCard } from "@/components/InmetCard";
+import { Button } from "@/components/ui/button";
 import { httpGetJson, HttpError } from "@/infra/core/httpClient";
 import { listarMunicipios, IbgeMunicipio } from "@/infra/geo/ibgeService";
 import { listarEmpreendimentosGD, AneelGdEmpreendimento } from "@/infra/energy/aneelService";
@@ -12,7 +14,7 @@ import { listarDespesasOrgao, DespesaOrcamentaria } from "@/infra/finance/portal
 import { buscarDatasets, DadosGovDataset } from "@/infra/infra/dadosGovService";
 import { listarEstacoesAutomaticas, obterEstacoesExemplo, InmetEstacao } from "@/infra/climate/inmetService";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Code2, MapPin, Zap, DollarSign, Database, CloudRain } from "lucide-react";
+import { Activity, Code2, MapPin, Zap, DollarSign, Database, CloudRain, BarChart3 } from "lucide-react";
 
 interface FetchState {
   isLoading: boolean;
@@ -63,6 +65,7 @@ interface InmetFetchState {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [githubState, setGithubState] = useState<FetchState>({
     isLoading: false,
@@ -377,9 +380,22 @@ const Index = () => {
           <h1 className="text-5xl font-bold text-center mb-4 bg-gradient-primary bg-clip-text text-transparent">
             HTTP Client Dashboard
           </h1>
-          <p className="text-xl text-center text-muted-foreground max-w-3xl mx-auto">
-            Plataforma completa para APIs brasileiras - Meteorologia, Geografia, Energia, Transparência, Dados Abertos e mais.
+          <p className="text-center text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
+            Plataforma abrangente de integração com APIs públicas brasileiras e
+            internacionais. Explore dados de municípios (IBGE), energia (ANEEL),
+            transparência pública (Portal da Transparência), infraestrutura
+            (dados.gov.br/DNIT/ANTT), clima (INMET) e muito mais.
           </p>
+          <div className="flex justify-center">
+            <Button
+              size="lg"
+              onClick={() => navigate("/dashboard")}
+              className="gap-2"
+            >
+              <BarChart3 className="h-5 w-5" />
+              Ver Dashboard Agregado
+            </Button>
+          </div>
         </div>
       </div>
 
