@@ -1,7 +1,7 @@
-import InfraBrRealAI from "@/components/InfraBrRealAI";
+import InfraBrRealTime from "@/components/InfraBrRealTime";
 
 const Index = () => {
-  return <InfraBrRealAI />;
+  return <InfraBrRealTime />;
 };
 
 export default Index;
